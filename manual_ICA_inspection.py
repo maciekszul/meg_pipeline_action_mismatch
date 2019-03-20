@@ -51,15 +51,56 @@ subj = subjs[subj_index]
 
 meg_subj_path = op.join(data_path,"MEG", subj)
 
+
 raw_files = files.get_files(
     meg_subj_path,
     "raw",
     "-raw.fif"
 )[2]
+raw_files.sort()
 
 raw_file = raw_files[file_index]
 
-
-mne.gui.coregistration(
-    subjects_dir=fs_path
+comp_ICA_json_path = op.join(
+    meg_subj_path,
+    "{}-ica-rej.json".format(str(subj).zfill(3))
 )
+
+ica_files = files.get_files(
+    meg_subj_path,
+    "",
+    "-ica.fif"
+)[2]
+ica_files.sort()
+
+ica_file = ica_files[file_index]
+
+if not op.exists(comp_ICA_json_path):
+    json_dict = {
+        i[-11:-8]: [] for i in raw_files
+    }
+    files.dump_the_dict(comp_ICA_json_path, json_dict)
+
+raw = mne.io.read_raw_fif(raw_file , preload=True, verbose=False)
+
+set_ch = {'EEG057-3305':'eog', 'EEG058-3305': 'eog'}
+raw.set_channel_types(set_ch)
+
+ica = mne.preprocessing.read_ica(ica_file)
+
+eog_ix, eog_scores = ica.find_bads_eog(
+    raw, 
+    threshold=3.0, 
+    l_freq=1, 
+    h_freq=10, 
+    verbose=False
+)
+eog_ix.sort()
+print(subj)
+print(eog_ix)
+
+ica.plot_scores(eog_scores, exclude=eog_ix)
+
+ica.plot_components()
+
+ica.plot_sources(raw)
