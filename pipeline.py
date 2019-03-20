@@ -4,6 +4,7 @@ import os.path as op
 import json
 import argparse
 from tools import files
+import pandas as pd
 
 json_file = "pipeline_params.json"
 
@@ -185,3 +186,41 @@ if pipeline_params["apply_ICA"]:
         )
 
         print(raw_path)
+
+if pipeline_params["epochs"]:
+    raw_files = files.get_files(
+        meg_subj_path,
+        "raw",
+        "-raw.fif",
+        wp=True
+    )[2]
+    raw_files.sort()
+
+    eve_files = files.get_files(
+        meg_subj_path,
+        "",
+        "-eve.fif",
+        wp=True
+    )[2]
+    eve_files.sort()
+
+    beh_files = files.get_files(
+        beh_subj_path,
+        "ses",
+        ".csv",
+        wp=True
+    )[2]
+    beh_files.sort()
+
+    all_files = zip(raw_files, eve_files, beh_files)
+
+    for raw_file, event_file, beh_file in all_files:
+        # raw = mne.io.read_raw_fif(
+        #     raw_file,
+        #     preload=True,
+        #     verbose=verb
+        # )
+
+        # events = mne.read_events(event_file)
+
+        raw
