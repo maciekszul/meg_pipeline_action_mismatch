@@ -13,5 +13,7 @@
 
     "fwd_solution": false,
     "cov_matrix": false,
-    "inv_operator": true
+    "inv_operator": false,
+    "INVERSE_SOLUTIONS": ["dSPM", "eLORETA", "sLORETA"],
+    "compute_inverse": [true, "dSPM"]
 }

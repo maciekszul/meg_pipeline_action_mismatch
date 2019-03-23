@@ -548,3 +548,63 @@ if pipeline_params["inv_operator"]:
 
         print(inv_out)
 
+
+if pipeline_params["compute_inverse"][0]:
+    method_dict = {
+        "dSPM": (8, 12, 15),
+        "sLORETA": (3, 5, 7),
+        "eLORETA": (0.75, 1.25, 1.75)
+    }
+
+    method = pipeline_params["compute_inverse"][1]
+    snr = 3.
+    lambda2 = 1. / snr ** 2
+    lims = method_dict[method]
+
+    epo_files = files.get_files(
+        meg_subj_path,
+        "all",
+        "-epo.fif"
+    )[2]
+    epo_files.sort()
+
+    inv_files = files.get_files(
+        meg_subj_path,
+        "inv",
+        "-inv.fif"
+    )[2]
+    inv_files.sort()
+
+    all_files = zip(epo_files, inv_files)
+
+    for epo_path, inv_path in all_files:
+        file_id = op.split(epo_path)[1].split("-")[1]
+
+        stc_out = op.join(
+            meg_subj_path,
+            "stc-{}"
+        )
+
+        epo = mne.read_epochs(
+            epo_path,
+            verbose=verb,
+            preload=True
+        )
+
+        epo = epo.average()
+
+        inv = mne.minimum_norm.read_inverse_operator(
+            inv_path,
+            verbose=verb
+        )
+
+        stc = mne.minimum_norm.apply_inverse(
+            epo,
+            inv,
+            lambda2,
+            method=method,
+            pick_ori=None,
+            verbose=True
+        )
+
+        # stc.save(stc_out)
