@@ -324,13 +324,13 @@ if pipeline_params["epochs"]:
         events_rot = mne.read_events(
             event_file,
             include=[30, 40]
-        )[:-3] # remove for real participant!!!!!!!!!!!!!
+        )
 
         events_obs = mne.read_events(
             event_file,
             include=[60, 70]
-        )[:-2] # remove for real participant!!!!!!!!!!!!!
-        beh_data = beh_data.loc[(beh_data.obs_dir_mod != 0)][:len(events_obs)] # remove for real participant!!!!!!!!!!!!!
+        )
+        beh_data = beh_data.loc[(beh_data.obs_dir_mod != 0)]
 
         resp_onset = beh_data.action_onset.values / samp
 
@@ -351,9 +351,8 @@ if pipeline_params["epochs"]:
 
         rotation = []
         observation = []
-        for ix, evo in enumerate(big_epochs.iter_evoked()):
-            print(ix)
-            
+        obs_trig = []
+        for ix, evo in enumerate(big_epochs.iter_evoked()):            
             rot = evo.copy()
             rot.crop(-0.5, 1.5)
             rotation.append(rot)
@@ -374,7 +373,7 @@ if pipeline_params["epochs"]:
         rot_epo = mne.EpochsArray(
             all_all,
             big_epochs.info,
-            events=events_rot,
+            events=events_rot[:-1], # investigate where the last epoch goes during iter_evoked() IMPORTANT!
             tmin=-0.5,
             baseline=baseline
         )
@@ -388,21 +387,14 @@ if pipeline_params["fwd_solution"]:
         add_dist=False
     )
 
-    # replace by making bem solution. faster
-    bem_path = op.join(
-        fs_path,
-        subj,
-        "bem"
+    model = mne.make_bem_model(
+        subject=subj,
+        ico=5,
+        conductivity=conductivity,
+        subjects_dir=fs_path
     )
-    bem_file = files.get_files(
-        bem_path,
-        "",
-        "-bem-sol.fif"
-    )[0][0]
 
-    bem = mne.read_bem_solution(
-        bem_file
-    )
+    bem = mne.make_bem_solution(model)
 
     raw_files = files.get_files(
         meg_subj_path,
