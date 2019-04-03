@@ -9,11 +9,11 @@
 
     "apply_ICA": false,
     "prep_beh": false,
-    "epochs": true,
+    "epochs": false,
 
-    "fwd_solution": false,
-    "cov_matrix": false,
-    "inv_operator": false,
+    "fwd_solution": true,
+    "cov_matrix": true,
+    "inv_operator": true,
     "INVERSE_SOLUTIONS": ["dSPM", "eLORETA", "sLORETA"],
     "compute_inverse": [false, "dSPM"]
 }
