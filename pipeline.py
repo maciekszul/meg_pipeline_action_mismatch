@@ -1,3 +1,8 @@
+import time
+named_tuple = time.localtime() # get struct_time
+time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+print("start:", time_string)
+
 import mne
 from mne.preprocessing import ICA
 import os.path as op
@@ -28,7 +33,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 params = vars(args)
-json_file = params["f"]
+json_file = params["f"][0]
 subj_index = params["n"]
 
 # read the pipeline params
@@ -37,7 +42,7 @@ with open(json_file) as pipeline_file:
 
 # paths
 data_path = pipeline_params["data_path"]
-fs_path = op.join(data_path, "MRI")
+fs_path = pipeline_params["fs_output"]
 
 subjs = files.get_folders_files(fs_path, wp=False)[0]
 subjs.sort()
@@ -48,6 +53,10 @@ meg_subj_path = op.join(data_path,"MEG", subj)
 beh_subj_path = op.join(data_path,"BEH", subj)
 
 verb=False
+
+print(subj)
+print(meg_subj_path)
+print(beh_subj_path)
 
 if pipeline_params["downsample_convert_filter"]:
     raw_ds = files.get_folders_files(
@@ -108,7 +117,7 @@ if pipeline_params["downsample_convert_filter"]:
         )
 
         n_components = 50
-        method = "extended-infomax"
+        method = "fastica"
         reject = dict(mag=4e-12)
 
         ica = ICA(
@@ -614,3 +623,8 @@ if pipeline_params["compute_inverse"][0]:
         )
 
         # stc.save(stc_out)
+
+
+named_tuple = time.localtime() # get struct_time
+time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+print("end:", time_string)

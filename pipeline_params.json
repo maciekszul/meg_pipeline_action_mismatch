@@ -1,7 +1,8 @@
 {
     "data_path": "/cubric/scratch/c1557187/act_mis",
+    "fs_output": "/cubric/scratch/c1557187/MRI_337/FS_OUTPUT",
 
-    "downsample_convert_filter": false,
+    "downsample_convert_filter": true,
     "downsample_to": 250,
 
     "MANUALLY_1": "manual_head_coreg.py - '*.pos' file has to be in '.ds' directory",
@@ -11,9 +12,9 @@
     "prep_beh": false,
     "epochs": false,
 
-    "fwd_solution": true,
-    "cov_matrix": true,
-    "inv_operator": true,
+    "fwd_solution": false,
+    "cov_matrix": false,
+    "inv_operator": false,
     "INVERSE_SOLUTIONS": ["dSPM", "eLORETA", "sLORETA"],
     "compute_inverse": [false, "dSPM"]
 }
