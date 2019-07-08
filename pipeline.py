@@ -351,7 +351,7 @@ if pipeline_params["epochs"]:
 
         obs_onset = (events_obs[:,0] - events_rot[:,0]) / samp
 
-        tmin, tmax = (-0.5, 10)
+        tmin, tmax = (-0.5, 12)
         baseline = (tmin, 0.0)
         big_epochs = mne.Epochs(
             raw,
@@ -374,24 +374,45 @@ if pipeline_params["epochs"]:
 
             obs_ons = obs_onset[ix]
             obs = evo.copy()
-            obs.crop(obs_ons, obs_ons+1)
+            try:
+                obs.crop(obs_ons, obs_ons+1)
+            except:
+                obs.crop(0, 1)
+                obs.data = np.zeros((274, 501))
             observation.append(obs)
         
         rot_all = np.array([i.data for i in rotation])
-        obs_all = np.array([i.data for i in observation])
+        try:
+            obs_all = np.array([i.data for i in observation])
+        except:
+            obs_all = []
+            for i in observation:
+                placeholder = np.zeros((274, 501))
+                placeholder[:i.data.shape[0], :i.data.shape[1]] = i.data
+                obs_all.append(placeholder)
+            obs_all = np.array(obs_all)  
         all_all = np.concatenate((rot_all, obs_all), axis=2)
 
         all_file_out = op.join(
             meg_subj_path,
             "all-{}-epo.fif".format(op.split(raw_file)[1].split("-")[1])
         )
-        rot_epo = mne.EpochsArray(
-            all_all,
-            big_epochs.info,
-            events=events_rot, # investigate where the last epoch goes during iter_evoked() IMPORTANT!
-            tmin=-0.5,
-            baseline=baseline
-        )
+        try:
+            rot_epo = mne.EpochsArray(
+                all_all,
+                big_epochs.info,
+                events=events_rot, # investigate where the last epoch goes during iter_evoked() IMPORTANT!
+                tmin=-0.5,
+                baseline=baseline
+            )
+        except:
+            rot_epo = mne.EpochsArray(
+                all_all,
+                big_epochs.info,
+                events=events_rot[:-1], # investigate where the last epoch goes during iter_evoked() IMPORTANT!
+                tmin=-0.5,
+                baseline=baseline
+            )
         rot_epo.save(all_file_out)
 
 if pipeline_params["fwd_solution"]:

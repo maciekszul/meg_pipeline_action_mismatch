@@ -9,7 +9,7 @@
     "MANUALLY_2": "manual_ICA_inspection.py - ICA components to reject from manual inspection + EOGs correlation",
 
     "apply_ICA": false,
-    "prep_beh": true,
+    "prep_beh": false,
     "epochs": true,
 
     "fwd_solution": false,
