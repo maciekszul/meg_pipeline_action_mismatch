@@ -2,15 +2,15 @@
     "data_path": "/cubric/scratch/c1557187/act_mis",
     "fs_output": "/cubric/scratch/c1557187/MRI_337/FS_OUTPUT",
 
-    "downsample_convert_filter": true,
+    "downsample_convert_filter": false,
     "downsample_to": 250,
 
     "MANUALLY_1": "manual_head_coreg.py - '*.pos' file has to be in '.ds' directory",
     "MANUALLY_2": "manual_ICA_inspection.py - ICA components to reject from manual inspection + EOGs correlation",
 
     "apply_ICA": false,
-    "prep_beh": false,
-    "epochs": false,
+    "prep_beh": true,
+    "epochs": true,
 
     "fwd_solution": false,
     "cov_matrix": false,

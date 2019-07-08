@@ -42,7 +42,7 @@ with open(json_file) as pipeline_file:
 
 # paths
 data_path = pipeline_params["data_path"]
-fs_path = op.join(data_path, "MRI")
+fs_path = pipeline_params["fs_output"]
 
 subjs = files.get_folders_files(fs_path, wp=False)[0]
 subjs.sort()
@@ -74,6 +74,9 @@ ica_files = files.get_files(
 ica_files.sort()
 
 ica_file = ica_files[file_index]
+
+print(raw_file)
+print(ica_file)
 
 if not op.exists(comp_ICA_json_path):
     json_dict = {

@@ -83,7 +83,8 @@ if pipeline_params["downsample_convert_filter"]:
 
         events = mne.find_events(
             raw,
-            stim_channel="UPPT001"
+            stim_channel="UPPT001",
+            min_duration=0.003
         )
 
         raw, events = raw.copy().resample(
@@ -119,10 +120,12 @@ if pipeline_params["downsample_convert_filter"]:
         n_components = 50
         method = "fastica"
         reject = dict(mag=4e-12)
+        max_iter = 1000
 
         ica = ICA(
             n_components=n_components, 
-            method=method
+            method=method,
+            max_iter=max_iter
         )
 
         ica.fit(
@@ -272,7 +275,10 @@ if pipeline_params["prep_beh"]:
             angle, radius = to_polar(x, y)
             degs = calculate_degs(angle, radius)
             degs = savgol_filter(degs, 25, 2, mode="mirror")
-            eng_ix = np.where(radius >= 0.2)[0][0]
+            try:
+                eng_ix = np.where(radius >= 0.2)[0][0]
+            except:
+                eng_ix = 0
             data_add["x"].append(x)
             data_add["y"].append(y)
             data_add["angle"].append(angle)
@@ -382,7 +388,7 @@ if pipeline_params["epochs"]:
         rot_epo = mne.EpochsArray(
             all_all,
             big_epochs.info,
-            events=events_rot[:-1], # investigate where the last epoch goes during iter_evoked() IMPORTANT!
+            events=events_rot, # investigate where the last epoch goes during iter_evoked() IMPORTANT!
             tmin=-0.5,
             baseline=baseline
         )
