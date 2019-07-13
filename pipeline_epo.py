@@ -75,8 +75,8 @@ if pipeline_params["downsample_convert_filter"]:
         picks_meg = mne.pick_types(
             raw.info, 
             meg=True, 
-            eeg=False, 
-            eog=False, 
+            eeg=True, 
+            eog=True, 
             ecg=False, 
             ref_meg=False
         )
@@ -112,183 +112,10 @@ if pipeline_params["downsample_convert_filter"]:
             "{}-eve.fif".format(str(ix).zfill(3))
         )
 
-        ica_out_path = op.join(
-            meg_subj_path,
-            "{}-ica.fif".format(str(ix).zfill(3))
-        )
-
-        n_components = 50
-        method = "fastica"
-        reject = dict(mag=4e-12)
-        max_iter = 1000
-
-        ica = ICA(
-            n_components=n_components, 
-            method=method,
-            max_iter=max_iter
-        )
-
-        ica.fit(
-            raw, 
-            picks=picks_meg,
-            reject=reject,
-            verbose=verb
-        )
-        print(subj, ix, "ICA_fit")
         raw.save(raw_out_path, overwrite=True)
         mne.write_events(events_out_path, events)
-        ica.save(ica_out_path)
         print(subj, ix, "saved")
 
-if pipeline_params["apply_ICA"]:
-    ica_json = files.get_files(
-        meg_subj_path,
-        "",
-        "ica-rej.json"
-    )[2][0]
-
-    raw_files = files.get_files(
-        meg_subj_path,
-        "raw",
-        "-raw.fif",
-        wp=False
-    )[2]
-
-    comp_ICA_json_path = op.join(
-        meg_subj_path,
-        "{}-ica-rej.json".format(str(subj).zfill(3))
-    )
-
-    ica_files = files.get_files(
-        meg_subj_path,
-        "",
-        "-ica.fif",
-        wp=False
-    )[2]
-    
-    with open(ica_json) as data:
-        components_rej = json.load(data)
-
-    for k in components_rej.keys():
-        raw_path = op.join(
-            meg_subj_path,
-            files.items_cont_str(raw_files, k, sort=True)[0]
-        )
-        ica_path = op.join(
-            meg_subj_path,
-            files.items_cont_str(ica_files, k, sort=True)[0]
-        )
-        
-        raw = mne.io.read_raw_fif(
-            raw_path,
-            preload=True,
-            verbose=verb
-        )
-
-        ica = mne.preprocessing.read_ica(ica_path)
-        raw_ica = ica.apply(
-            raw,
-            exclude=components_rej[k]
-        )
-
-        raw_ica.save(
-            raw_path,
-            fmt="single",
-            split_size="2GB",
-            overwrite=True
-        )
-
-        print(raw_path)
-
-
-if pipeline_params["prep_beh"]:
-    import math
-    from utilities import files, tools
-    from scipy.interpolate import interp1d
-    from scipy.signal import savgol_filter
-    from itertools import compress
-
-
-    def resamp_interp(x, y, new_x):
-        """
-        returns resampled an interpolated data
-        """
-        resamp = interp1d(x, y, kind='slinear', fill_value='extrapolate')
-        new_data = resamp(new_x)
-        return new_data
-
-    def to_polar(x, y):
-        radius = []
-        angle = []
-        xy = zip(x, y)
-        for x, y in xy:
-            rad, theta = tools.cart2polar(x, y)
-            theta = math.degrees(theta)
-            angle.append(theta)
-            radius.append(rad)
-        del xy
-        radius = np.array(radius)
-        angle = np.array(angle)
-        return [angle, radius]
-
-    def nan_cleaner(arr):
-        """
-        clears nan values and interpolates the missing value
-        """
-        mask = np.isnan(arr)
-        arr[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[~mask])
-        return arr
-
-
-    def calculate_degs(angle, radius):
-        degs = np.diff(angle)
-        degs = np.insert(degs, 0, 0)
-        degs[np.abs(degs) > 300] = np.nan
-        degs = nan_cleaner(degs)
-        degs = degs * radius
-        return degs
-    
-    csv_files = files.get_files(beh_subj_path, "ses", ".csv")[2]
-    csv_files.sort()
-    for csv_file in csv_files:
-        npy_folder = csv_file.split(".")[0]
-        npy_files = files.get_files(npy_folder, "", ".npy")[2]
-        npy_files.sort()
-
-        beh_data = pd.read_csv(csv_file, index_col=0)
-
-        data_add = {
-            "x": [],
-            "y": [],
-            "angle": [],
-            "radius": [],
-            "degs": [],
-            "action_onset": []
-        }
-
-        for file in npy_files:
-            (x_raw, y_raw, t_raw) =  np.load(file)
-            t_raw = t_raw - t_raw[0]
-            t = np.linspace(0.0, 1.5, num=375)
-            x = resamp_interp(t_raw, x_raw, t)
-            y = resamp_interp(t_raw, y_raw, t)
-            angle, radius = to_polar(x, y)
-            degs = calculate_degs(angle, radius)
-            degs = savgol_filter(degs, 25, 2, mode="mirror")
-            try:
-                eng_ix = np.where(radius >= 0.2)[0][0]
-            except:
-                eng_ix = 0
-            data_add["x"].append(x)
-            data_add["y"].append(y)
-            data_add["angle"].append(angle)
-            data_add["radius"].append(radius)
-            data_add["degs"].append(degs)
-            data_add["action_onset"].append(eng_ix)
-
-        all_data = pd.concat([beh_data,pd.DataFrame(data_add)], axis=1)
-        file_out = "{}.pkl".format(csv_file.split(".")[0])
-        all_data.to_pickle(file_out)
 
 if pipeline_params["epochs"]:
     raw_files = files.get_files(
@@ -321,15 +148,17 @@ if pipeline_params["epochs"]:
 
         raw = mne.io.read_raw_fif(
             raw_file,
-            preload=False,
+            preload=True,
             verbose=verb
         )
+
+        raw = raw.filter(1, 30)
 
         picks_meg = mne.pick_types(
             raw.info, 
             meg=True, 
-            eeg=False, 
-            eog=False, 
+            eeg=True, 
+            eog=True, 
             ecg=False, 
             ref_meg=False
         )
@@ -367,25 +196,15 @@ if pipeline_params["epochs"]:
         rotation = []
         observation = []
         obs_trig = []
-        for ix, evo in enumerate(big_epochs.iter_evoked()):            
-            rot = evo.copy()
-            rot.crop(-0.5, 1.5)
-            rotation.append(rot)
+        for ix, evo in enumerate(big_epochs.iter_evoked()):
 
             obs_ons = obs_onset[ix]
             obs = evo.copy()
             obs.crop(obs_ons-0.1, obs_ons+1)
             observation.append(obs)
         
-        rot_all = np.array([i.data for i in rotation])
         obs_all = np.array([i.data for i in observation])
         obs_all = np.array(obs_all)  
-        all_all = np.concatenate((rot_all, obs_all), axis=2)
-
-        all_file_out = op.join(
-            meg_subj_path,
-            "all-{}-epo.fif".format(op.split(raw_file)[1].split("-")[1])
-        )
 
         obs_file_out = op.join(
             meg_subj_path,
@@ -393,24 +212,128 @@ if pipeline_params["epochs"]:
         )
 
         try:
-            all_epo = mne.EpochsArray(
-                all_all,
+            obs_epo = mne.EpochsArray(
+                obs_all,
                 big_epochs.info,
                 events=events_rot, # investigate where the last epoch goes during iter_evoked() IMPORTANT!
-                tmin=-0.5,
-                baseline=baseline
+                tmin=-0.1,
+                baseline=(-0.1, 0.0)
             )
-
         except:
-            all_epo = mne.EpochsArray(
-                all_all,
+            obs_epo = mne.EpochsArray(
+                obs_all,
                 big_epochs.info,
-                events=events_rot[:all_all.shape[0]], # investigate where the last epoch goes during iter_evoked() IMPORTANT!
-                tmin=-0.5,
-                baseline=baseline
+                events=events_rot[:obs_all.shape[0]], # investigate where the last epoch goes during iter_evoked() IMPORTANT!
+                tmin=-0.1,
+                baseline=(-0.1, 0.0)
             )
 
-        all_epo.save(all_file_out)
+        obs_epo.save(obs_file_out)
+
+if pipeline_params["ica_epochs"]:
+    epo_files = files.get_files(
+        meg_subj_path,
+        "obs-",
+        "-epo.fif",
+        wp=True
+    )[2]
+
+    epo_files.sort()
+    
+    for ix, epo in enumerate(epo_files):
+        ica_out_path = op.join(
+            meg_subj_path,
+            "obs-{0}-ica.fif".format(str(ix).zfill(3))
+        )
+
+        epoch = mne.read_epochs(
+            epo,
+            preload=True,
+            verbose=verb
+        )
+
+        n_components = 50
+        method = "fastica"
+        reject = dict(mag=4e-12)
+        max_iter = 10000
+
+        ica = ICA(
+            n_components=n_components, 
+            method=method,
+            max_iter=max_iter
+        )
+
+        ica.fit(
+            epoch, 
+            reject=reject,
+            verbose=verb
+        )
+
+        ica.save(ica_out_path)
+        print(subj, ix, "saved")
+
+if pipeline_params["apply_ICA"]:
+    ica_json = files.get_files(
+        meg_subj_path,
+        "",
+        "ica-rej.json"
+    )[2][0]
+
+    raw_files = files.get_files(
+        meg_subj_path,
+        "obs-",
+        "-epo.fif",
+        wp=False
+    )[2]
+
+    comp_ICA_json_path = op.join(
+        meg_subj_path,
+        "obs-{}-ica-rej.json".format(str(subj).zfill(3))
+    )
+
+    ica_files = files.get_files(
+        meg_subj_path,
+        "obs-",
+        "-ica.fif",
+        wp=False
+    )[2]
+    
+    with open(ica_json) as data:
+        components_rej = json.load(data)
+
+    for k in components_rej.keys():
+        raw_path = op.join(
+            meg_subj_path,
+            files.items_cont_str(raw_files, k, sort=True)[0]
+        )
+        ica_path = op.join(
+            meg_subj_path,
+            files.items_cont_str(ica_files, k, sort=True)[0]
+        )
+        
+        obs_path = op.join(
+            meg_subj_path, 
+            "ica-obs-{0}-epo.fif".format(k)
+        )
+        raw = mne.read_epochs(
+            raw_path,
+            preload=True,
+            verbose=verb
+        )
+
+        ica = mne.preprocessing.read_ica(ica_path)
+        raw_ica = ica.apply(
+            raw,
+            exclude=components_rej[k]
+        )
+        
+        raw_ica.save(
+            obs_path,
+            fmt="single",
+            split_size="2GB"
+        )
+
+        print(raw_path)
 
 if pipeline_params["fwd_solution"]:
     src = mne.setup_source_space(
