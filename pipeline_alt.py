@@ -220,3 +220,148 @@ if parameters["step_2"]:
 named_tuple = time.localtime() # get struct_time
 time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
 print("step 2 done:", time_string)
+
+
+if parameters["step_3"]:
+    components_file_path = op.join(
+        subject_meg,
+        "rejected-components.json"
+    )
+
+    with open(components_file_path) as data:
+        components_rej = json.load(data)
+    
+    for raw_file in components_rej.keys():
+        # output paths
+        epochs_TF = op.join(
+            subject_meg,
+            "epochs-TF-{}-epo.fif".format(raw_file[3:6])
+        )
+        epochs_TD = op.join(
+            subject_meg,
+            "epochs-TD-{}-epo.fif".format(raw_file[3:6])
+        )
+
+        # read files
+        raw = mne.io.read_raw_fif(
+            op.join(subject_meg, raw_file),
+            preload=False
+        )
+
+        ica_path = files.get_files(
+            subject_meg,
+            "{}".format(raw_file[:6]),
+            "-ica.fif",
+            wp=True
+        )[2][0]
+
+        events_path = files.get_files(
+            subject_meg,
+            "events-{}".format(raw_file[3:6]),
+            "-eve.fif",
+            wp=True
+        )[2][0]
+        
+        events = mne.read_events(
+            events_path
+        )
+
+        ica = mne.preprocessing.read_ica(ica_path)
+
+        raw = ica.apply(
+            raw,
+            exclude=components_rej[raw_file]
+        )
+
+        # calculating the mid-phase cutout
+
+        tr_start = np.where((events[:,2] < 50))[0]
+        tr_end = np.where((events[:,2] > 50) & (events[:,2] < 80))[0]
+
+        tr_onsets, tr_ends = events[tr_start][:,0], events[tr_end][:,0]
+
+        tr_durations = tr_ends - tr_onsets
+        
+        tr_cutouts = np.int_(tr_durations - 1.5*250)
+
+
+        # TF epochs
+        epochs = mne.Epochs(
+            raw,
+            events=events,
+            baseline=None,
+            preload=True,
+            event_id=[30, 40],
+            tmin=-0.5,
+            tmax=np.max(tr_durations/250 + 1.1 + 2.5),
+            detrend=1
+        )
+
+        epochs_array = []
+        for ix, epo in enumerate(list(epochs.iter_evoked())):
+            data = epo.data
+            del_ints = np.arange(500, 500 + tr_cutouts[ix])
+            data = np.delete(data, del_ints, axis=1)
+            data = data[:,:775]
+            epochs_array.append(data)
+        
+        epochs_array = np.array(epochs_array)
+
+        epochs = mne.EpochsArray(
+            epochs_array,
+            epochs.info,
+            events=events[start[:epochs_array.shape[0]]],
+            tmin=-0.5,
+            baseline=None
+        )
+
+        epochs.save(epochs_TF)
+
+        del epochs
+
+        # TD epochs
+
+        raw = raw.filter(
+            None,
+            30,
+            method="fir",
+            phase="minimum",
+            n_jobs=-1
+        )
+
+        epochs = mne.Epochs(
+            raw,
+            events=events,
+            baseline=None,
+            preload=True,
+            event_id=[30, 40],
+            tmin=-0.5,
+            tmax=np.max(tr_durations/250 + 1.1 + 2.5),
+            detrend=1
+        )
+
+        epochs_array = []
+        for ix, epo in enumerate(list(epochs.iter_evoked())):
+            data = epo.data
+            del_ints = np.arange(500, 500 + tr_cutouts[ix])
+            data = np.delete(data, del_ints, axis=1)
+            data = data[:,:775]
+            epochs_array.append(data)
+        
+        epochs_array = np.array(epochs_array)
+
+        epochs = mne.EpochsArray(
+            epochs_array,
+            epochs.info,
+            events=events[start[:epochs_array.shape[0]]],
+            tmin=-0.5,
+            baseline=None
+        )
+
+        epochs.save(epochs_TD)
+
+        del epochs
+
+named_tuple = time.localtime() # get struct_time
+time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+print("step 3 done:", time_string)

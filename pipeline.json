@@ -4,5 +4,6 @@
     "freesurfer": "/cubric/scratch/c1557187/MRI_337/FS_OUTPUT",
 
     "step_1": false,
-    "step_2": true
+    "step_2": false,
+    "step_3": true
 }
