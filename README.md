@@ -22,3 +22,14 @@ Step 3:
  - separately filter the raw ~30Hz (for T domain)
  - epoch for T-F and T domain
  - save both
+
+MANUALLY FIT THE HEADSHAPE
+
+Step 3:
+ - prepare for forward solution
+ - anatomy only
+ - setup a source space
+ - calculate bem solution
+
+Step 4:
+ - calculate forward solution

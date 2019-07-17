@@ -96,9 +96,14 @@ if parameters["step_1"]:
         )
 
         # cropping raw file 5s relative to first and last event
-        raw_start = raw.times[events[0][0]] - 5
-        raw_end = raw.times[events[-1][0]] + 5
-        raw = raw.crop(tmin=raw_start, tmax=raw_end)
+        try:
+            raw_start = raw.times[events[0][0]] - 5
+            raw_end = raw.times[events[-1][0]] + 5
+            raw = raw.crop(tmin=raw_start, tmax=raw_end)
+        except:
+            raw_start = raw.times[events[0][0]] - 5
+            raw_end = raw.times[events[-1][0]] + 1
+            raw = raw.crop(tmin=raw_start, tmax=raw_end)
 
         events = mne.find_events(
             raw,
@@ -111,7 +116,7 @@ if parameters["step_1"]:
 
         raw = raw.pick_types(
             meg=True,
-            ref_meg=False,
+            ref_meg=True,
             eog=True,
             eeg=False
         )
@@ -149,9 +154,10 @@ if parameters["step_1"]:
         # deleting  heavy objects
         del raw
 
-named_tuple = time.localtime() # get struct_time
-time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
-print("step 1 done:", time_string)
+        named_tuple = time.localtime() # get struct_time
+        time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+        print("step 1 done:", time_string)
+
 
 if parameters["step_2"]:
     raws_files = files.get_files(
@@ -197,7 +203,6 @@ if parameters["step_2"]:
         # ICA
         n_components = 50
         method = "fastica"
-        reject = dict(mag=4000e-13)
         max_iter = 10000
 
         ica = ICA(
@@ -208,7 +213,6 @@ if parameters["step_2"]:
 
         ica.fit(
             raw,
-            reject=reject
         )
 
         ica.save(
@@ -216,10 +220,9 @@ if parameters["step_2"]:
         )
         print(ica_out)
 
-
-named_tuple = time.localtime() # get struct_time
-time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
-print("step 2 done:", time_string)
+        named_tuple = time.localtime() # get struct_time
+        time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+        print("step 2 done:", time_string)
 
 
 if parameters["step_3"]:
@@ -245,7 +248,7 @@ if parameters["step_3"]:
         # read files
         raw = mne.io.read_raw_fif(
             op.join(subject_meg, raw_file),
-            preload=False
+            preload=True
         )
 
         ica_path = files.get_files(
@@ -310,7 +313,7 @@ if parameters["step_3"]:
         epochs = mne.EpochsArray(
             epochs_array,
             epochs.info,
-            events=events[start[:epochs_array.shape[0]]],
+            events=events[tr_start[:epochs_array.shape[0]]],
             tmin=-0.5,
             baseline=None
         )
@@ -353,7 +356,7 @@ if parameters["step_3"]:
         epochs = mne.EpochsArray(
             epochs_array,
             epochs.info,
-            events=events[start[:epochs_array.shape[0]]],
+            events=events[tr_start[:epochs_array.shape[0]]],
             tmin=-0.5,
             baseline=None
         )
@@ -362,6 +365,94 @@ if parameters["step_3"]:
 
         del epochs
 
-named_tuple = time.localtime() # get struct_time
-time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
-print("step 3 done:", time_string)
+        named_tuple = time.localtime() # get struct_time
+        time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+        print("step 3 done:", time_string)
+
+
+if parameters["step_4"]:
+    # setup a source space
+    src = mne.setup_source_space(
+        subject=subject, 
+        subjects_dir=subjects_dir, 
+        spacing="ico4", 
+        add_dist=False,
+        n_jobs=2
+    )
+
+    src_path = op.join(
+        subject_meg,
+        "{}-src.fif".format(subject)
+    )
+
+    mne.write_source_spaces(src_path, src, overwrite=True)
+
+    conductivity = (0.3, 0.006, 0.3)
+    
+    model = mne.make_bem_model(
+        subject=subject,
+        ico=4,
+        conductivity=conductivity,
+        subjects_dir=subjects_dir
+    )
+
+    bem = mne.make_bem_solution(model)
+
+    bem_path = op.join(
+        subject_meg,
+        "{}-bem.fif".format(subject)
+    )
+
+    mne.write_bem_solution(bem_path, bem)
+
+    del src
+    del bem
+    
+    named_tuple = time.localtime() # get struct_time
+    time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+    print("step 4 done:", time_string)
+
+if parameters["step_5"]:
+    # read files
+    src_path = op.join(
+        subject_meg,
+        "{}-src.fif".format(subject)
+    )
+    src = mne.read_source_spaces(src_path)
+
+    bem_path = op.join(
+        subject_meg,
+        "{}-bem.fif".format(subject)
+    )
+    bem = mne.read_bem_solution(bem_path)
+
+    trans_files = files.get_files(
+        subject_meg,
+        "",
+        "-trans.fif"
+    )[2]
+    trans_files.sort()
+
+    raws_files = files.get_files(
+        subject_meg,
+        "80",
+        "-raw.fif"
+    )[2]
+    raws_files.sort()
+
+    for ix, (raw_path, trans_path) in enumerate(zip(raws_files, trans_files)):
+        raw = mne.io.read_raw_fif(raw_path)
+        fwd = mne.make_forward_solution(
+            raw.info,
+            trans=trans_path,
+            src=src,
+            bem=bem,
+            meg=True,
+            mindist=5.0,
+            n_jobs=-1
+        )
+
+        fwd_path = op.join(
+            subject_meg,
+            "{}-fwd.fif".format(str(ix).zfill(3))
+        )
