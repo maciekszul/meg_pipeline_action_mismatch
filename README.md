@@ -25,11 +25,15 @@ Step 3:
 
 MANUALLY FIT THE HEADSHAPE
 
-Step 3:
+Step 4:
  - prepare for forward solution
  - anatomy only
  - setup a source space
  - calculate bem solution
 
-Step 4:
+Step 5:
  - calculate forward solution
+
+Step 6:
+ - pick the epochs
+ - compute teh appropriate covariance matrix

@@ -8,5 +8,6 @@
     "step_3": true,
     "step_4": false,
     "step_5": false,
-    "step_6": false
+    "step_6": false,
+    "cov_mx_pre": "30"
 }

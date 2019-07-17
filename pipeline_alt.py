@@ -463,6 +463,9 @@ if parameters["step_5"]:
 
 
 if parameters["step_6"]:
+
+    
+
     named_tuple = time.localtime() # get struct_time
     time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
     print("step 6 done:", time_string)
