@@ -464,8 +464,37 @@ if parameters["step_5"]:
 
 if parameters["step_6"]:
 
-    
+    if parameters["cov_mx_pre"] == 30:
 
-    named_tuple = time.localtime() # get struct_time
-    time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
-    print("step 6 done:", time_string)
+        epochs_files = files.get_files(
+            subject_meg,
+            parameters["cov_mx_pre"],
+            "-epo.fif",
+            wp=True
+        )[2]
+        epochs_files.sort()
+        for ix, epo_path in enumerate(epochs_files):
+            epochs = mne.read_epochs(
+                epo_path,
+                preload=True
+            )
+            epochs = epochs.apply_baseline((-0.1, 0.0))
+            epochs = epochs.apply_baseline((1.6, 2.6))
+
+            cov_mx = mne.compute_covariance(
+                epochs,
+                method="auto",
+                cv=5,
+                scalings=dict(mag=1e13, grad=1e15, eeg=1e6), # because the data is from gradiometers see the https://mne-tools.github.io/0.17/generated/mne.compute_covariance.html#mne.compute_covariance
+                n_jobs=-1,
+                rank=None
+            )
+            cov_mx_path = op.join(
+                subject_meg,
+                "{0}-{}-cov.fif".format(parameters["cov_mx_pre"], str(ix).zfill(3))
+            )
+            cov_mx.save(cov_mx_path)
+
+            named_tuple = time.localtime() # get struct_time
+            time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+            print("step 6 done:", time_string)
