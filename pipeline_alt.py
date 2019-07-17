@@ -146,7 +146,7 @@ if parameters["step_1"]:
             n_jobs=-1,
         )
 
-        raw.save(raw_80_out)
+        raw.save(raw_80_out, overwrite=True)
         print(raw_80_out)
 
         mne.write_events(eve_out, events)
@@ -387,7 +387,7 @@ if parameters["step_4"]:
 
     mne.write_source_spaces(src_path, src, overwrite=True)
 
-    conductivity = (0.3, 0.006, 0.3)
+    conductivity = (0.3, )
     
     model = mne.make_bem_model(
         subject=subject,
@@ -411,6 +411,7 @@ if parameters["step_4"]:
     named_tuple = time.localtime() # get struct_time
     time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
     print("step 4 done:", time_string)
+
 
 if parameters["step_5"]:
     # read files
@@ -456,3 +457,12 @@ if parameters["step_5"]:
             subject_meg,
             "{}-fwd.fif".format(str(ix).zfill(3))
         )
+    named_tuple = time.localtime() # get struct_time
+    time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+    print("step 5 done:", time_string)
+
+
+if parameters["step_6"]:
+    named_tuple = time.localtime() # get struct_time
+    time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+    print("step 6 done:", time_string)
