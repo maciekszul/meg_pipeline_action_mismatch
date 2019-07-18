@@ -9,5 +9,5 @@
     "step_4": false,
     "step_5": false,
     "step_6": true,
-    "cov_mx_pre": "epochs-TF"
+    "cov_mx_pre": "epochs-TD"
 }

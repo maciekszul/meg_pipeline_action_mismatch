@@ -464,7 +464,7 @@ if parameters["step_5"]:
 
 if parameters["step_6"]:
 
-    if parameters["cov_mx_pre"] == 30:
+    if parameters["cov_mx_pre"] == "epochs-TD":
 
         epochs_files = files.get_files(
             subject_meg,
@@ -491,7 +491,7 @@ if parameters["step_6"]:
             )
             cov_mx_path = op.join(
                 subject_meg,
-                "{0}-{}-cov.fif".format(parameters["cov_mx_pre"], str(ix).zfill(3))
+                "{0}-{1}-cov.fif".format(parameters["cov_mx_pre"], str(ix).zfill(3))
             )
             cov_mx.save(cov_mx_path)
 
