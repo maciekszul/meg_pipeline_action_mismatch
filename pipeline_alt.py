@@ -457,6 +457,11 @@ if parameters["step_5"]:
             subject_meg,
             "{}-fwd.fif".format(str(ix).zfill(3))
         )
+        mne.write_forward_solution(
+            fwd_path,
+            fwd,
+            overwrite=True
+        )
     named_tuple = time.localtime() # get struct_time
     time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
     print("step 5 done:", time_string)
