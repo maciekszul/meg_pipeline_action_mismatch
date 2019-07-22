@@ -375,7 +375,7 @@ if parameters["step_4"]:
     src = mne.setup_source_space(
         subject=subject, 
         subjects_dir=subjects_dir, 
-        spacing="ico4", 
+        spacing="ico5", 
         add_dist=False,
         n_jobs=2
     )
@@ -391,7 +391,7 @@ if parameters["step_4"]:
     
     model = mne.make_bem_model(
         subject=subject,
-        ico=4,
+        ico=5,
         conductivity=conductivity,
         subjects_dir=subjects_dir
     )
@@ -449,7 +449,7 @@ if parameters["step_5"]:
             src=src,
             bem=bem,
             meg=True,
-            mindist=5.0,
+            mindist=0.0,
             n_jobs=-1
         )
 
