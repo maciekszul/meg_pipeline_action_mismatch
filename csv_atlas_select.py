@@ -8,7 +8,7 @@ atlas_csv = "/cubric/data/c1557187/meg_pipeline_action_mismatch/tools/atlas_glas
 
 s_dir = "/cubric/scratch/c1557187/MRI_337/FS_OUTPUT"
 s_id = "fsaverage"
-h = "lh"
+h = "both"
 
 labels = mne.read_labels_from_annot(
     subjects_dir=s_dir, 
@@ -76,10 +76,9 @@ motor_ = list(atlas_labels.loc[
 
 lh_annot_path = "/cubric/data/c1557187/atlas_data/hcp-mmp-b/lh.hcp-mmp-b.annot"
 
-label_list = visual_ + motor_
-
-
-names = [i.name[2:-7] for i in labels]
+label_list = visual_
+label_list = ["L_"+ i for i in label_list] + ["R_"+ i for i in label_list]
+names = [i.name[:-7] for i in labels]
 picked_indices = [names.index(i) for i in label_list]
 picked_labels = list(itemgetter(*picked_indices)(labels))
 

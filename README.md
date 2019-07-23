@@ -40,3 +40,7 @@ Step 6:
 Step 7:
  - pick the epochs
  - compute teh appropriate covariance matrix
+
+Step 8:
+ - pick the epochs
+ - compute the inverse model

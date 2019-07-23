@@ -475,14 +475,24 @@ if parameters["step_6"]:
 
     src = mne.read_source_spaces(src_path)
 
-    mne.compute_source_morph(
+    morph_path = op.join(
+        subject_meg,
+        "{}".format(subject)
+    )
+
+    morph = mne.compute_source_morph(
         src,
         subject_from=subject,
         subject_to="fsaverage",
         subjects_dir=subjects_dir,
-        spacing=5,
-        smooth=None
+        spacing=None
     )
+
+    morph.save(morph_path)
+
+    named_tuple = time.localtime() # get struct_time
+    time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+    print("step 6 done:", time_string)
 
 
 if parameters["step_7"]:
@@ -521,3 +531,53 @@ if parameters["step_7"]:
             named_tuple = time.localtime() # get struct_time
             time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
             print("step 7 done:", time_string)
+
+if parameters["step_8"]:
+    if parameters["cov_mx_pre"] == "epochs-TD":
+        epochs_files = files.get_files(
+            subject_meg,
+            parameters["cov_mx_pre"],
+            "-epo.fif",
+            wp=True
+        )[2]
+        epochs_files.sort()
+
+        fwd_solution = files.get_files(subject_meg, "", "-fwd.fif")[2]
+        fwd_solution.sort()
+        noise_cov = files.get_files(
+            subject_meg, 
+            parameters["cov_mx_pre"], 
+            "-cov.fif"
+        )[2]
+        noise_cov.sort()
+
+        all_files = list(zip(noise_cov, fwd_solution, epochs_files))
+
+        for cov_path, fwd_path, epo_path in all_files:
+            epochs = mne.read_epochs(epo_path)
+            cov = mne.read_cov(cov_path)
+            fwd = mne.read_forward_solution(fwd_path)
+            info = epochs.info
+            inverse_operator = mne.minimum_norm.make_inverse_operator(
+                info,
+                fwd,
+                cov,
+                loose=0.2,
+                depth=0.8
+            )
+
+            inv_path = op.join(
+                subject_meg,
+                "{0}-{1}-inv.fif".format(
+                    parameters["cov_mx_pre"], 
+                    cov_path.split("/")[-1].split("-")[-2]
+                )
+            )
+            mne.minimum_norm.write_inverse_operator(
+                inv_path,
+                inverse_operator
+            )
+
+            named_tuple = time.localtime() # get struct_time
+            time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+            print("step 8 done:", time_string)
