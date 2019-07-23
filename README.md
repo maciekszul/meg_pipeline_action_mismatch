@@ -35,5 +35,8 @@ Step 5:
  - calculate forward solution
 
 Step 6:
+ - compute a spherical morphing from subject space to fsaverage
+
+Step 7:
  - pick the epochs
  - compute teh appropriate covariance matrix

@@ -449,7 +449,7 @@ if parameters["step_5"]:
             src=src,
             bem=bem,
             meg=True,
-            mindist=0.0,
+            mindist=0.5,
             n_jobs=-1
         )
 
@@ -468,6 +468,24 @@ if parameters["step_5"]:
 
 
 if parameters["step_6"]:
+    src_path = op.join(
+        subject_meg,
+        "{}-src.fif".format(subject)
+    )
+
+    src = mne.read_source_spaces(src_path)
+
+    mne.compute_source_morph(
+        src,
+        subject_from=subject,
+        subject_to="fsaverage",
+        subjects_dir=subjects_dir,
+        spacing=5,
+        smooth=None
+    )
+
+
+if parameters["step_7"]:
 
     if parameters["cov_mx_pre"] == "epochs-TD":
 
@@ -502,4 +520,4 @@ if parameters["step_6"]:
 
             named_tuple = time.localtime() # get struct_time
             time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
-            print("step 6 done:", time_string)
+            print("step 7 done:", time_string)
