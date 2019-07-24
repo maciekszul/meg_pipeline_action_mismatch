@@ -44,7 +44,7 @@ INDEX,LABEL_NAME,LONG_NAME,LEVEL_1,LEVEL_2,LEVEL_3,LEVEL_4,LEVEL_5
 43,SCEF,Supplementary and Cingulate Eye Field,7,19,22,0,0
 44,6ma,Area 6m anterior,7,8,22,0,0
 45,7Am,Medial Area 7A,7,16,18,0,0
-46,7Pl,Lateral Area 7P,16,18,0,0,0
+46,7PL,Lateral Area 7P,16,18,0,0,0
 47,7PC,Area 7PC,6,16,0,0,0
 48,LIPv,Area Lateral Intraparietal ventral,16,0,0,0,0
 49,VIP,Ventral Intraparietal Complex,16,0,0,0,0
