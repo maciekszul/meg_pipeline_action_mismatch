@@ -71,8 +71,9 @@ if parameters["step_1"]:
     )[0]
 
     ds_list = [i for i in ds if ".ds" in i]
+    ds_list.sort()
 
-    for ix, ds in enumerate(ds_list):
+    for ix, ds_path in enumerate(ds_list):
 
         # output paths
         raw_80_out = op.join(
@@ -87,38 +88,45 @@ if parameters["step_1"]:
 
         # processing
 
-        raw = mne.io.read_raw_ctf(ds, preload=True)
+        raw = mne.io.read_raw_ctf(
+            ds_path, 
+            preload=True, 
+            clean_names=True, 
+            system_clock="ignore"
+        )
+
+        set_ch = {"EEG057":"eog", "EEG058": "eog", "UPPT001": "stim"}
+        raw.set_channel_types(set_ch)
 
         events = mne.find_events(
             raw,
-            stim_channel="UPPT001",
             min_duration=0.003
         )
 
         # cropping raw file 5s relative to first and last event
         try:
-            raw_start = raw.times[events[0][0]] - 5
-            raw_end = raw.times[events[-1][0]] + 5
-            raw = raw.crop(tmin=raw_start, tmax=raw_end)
+            crop_min = events[0][0]/ 1200 - 5
+            crop_max = events[-1][0]/ 1200 + 5
+            raw.crop(tmin=crop_min, tmax=crop_max)
         except:
-            raw_start = raw.times[events[0][0]] - 5
-            raw_end = raw.times[events[-1][0]] + 1
-            raw = raw.crop(tmin=raw_start, tmax=raw_end)
-
-        events = mne.find_events(
-            raw,
-            stim_channel="UPPT001",
-            min_duration=0.003
-        )
-
-        set_ch = {'EEG057-3305':'eog', 'EEG058-3305': 'eog'}
-        raw.set_channel_types(set_ch)
+            crop_min = events[0][0]/ 1200 - 5
+            crop_max = events[-1][0]/ 1200 + 1
+            raw.crop(tmin=crop_min, tmax=crop_max)
 
         raw = raw.pick_types(
             meg=True,
             ref_meg=True,
             eog=True,
-            eeg=False
+            eeg=False,
+            stim=True
+        )
+
+        filter_picks = mne.pick_types(
+            raw.info,
+            meg=True,
+            ref_meg=True,
+            stim=False,
+            eog=True
         )
 
         raw = raw.filter(
@@ -126,7 +134,8 @@ if parameters["step_1"]:
             None,
             method="fir",
             phase="minimum",
-            n_jobs=-1
+            n_jobs=-1,
+            picks=filter_picks
         )
         
         raw = raw.filter(
@@ -134,10 +143,9 @@ if parameters["step_1"]:
             80,
             method="fir",
             phase="minimum",
-            n_jobs=-1
+            n_jobs=-1,
+            picks=filter_picks
         )
-
-        
 
         raw, events = raw.copy().resample(
             250, 
@@ -287,83 +295,83 @@ if parameters["step_3"]:
         
         tr_cutouts = np.int_(tr_durations - 1.5*250)
 
-
+        sel_evts = events[(events[:,2] == 30) | (events[:,2] == 40)]
         # TF epochs
-        epochs = mne.Epochs(
-            raw,
-            events=events,
-            baseline=None,
-            preload=True,
-            event_id=[30, 40],
-            tmin=-0.5,
-            tmax=np.max(tr_durations/250 + 1.1 + 2.5),
-            detrend=1
-        )
-
         epochs_array = []
-        for ix, epo in enumerate(list(epochs.iter_evoked())):
-            data = epo.data
+        for ix, i in enumerate(tr_durations):
+            epochs = mne.Epochs(
+                raw,
+                events=sel_evts[ix:ix+1],
+                baseline=None,
+                preload=True,
+                tmin=-0.5,
+                tmax=i/250 + 1.11,
+                detrend=1
+            )
+
+            info_save = epochs.info
+
+            data = epochs.get_data()[0]
             del_ints = np.arange(500, 500 + tr_cutouts[ix])
             data = np.delete(data, del_ints, axis=1)
-            data = data[:,:775]
+            data = data[:,:776]
+
             epochs_array.append(data)
-        
-        epochs_array = np.array(epochs_array)
 
         epochs = mne.EpochsArray(
-            epochs_array,
+            np.array(epochs_array),
             epochs.info,
-            events=events[tr_start[:epochs_array.shape[0]]],
+            events=events[tr_start],
             tmin=-0.5,
             baseline=None
         )
-
+        print(epochs)
         epochs.save(epochs_TF)
 
         del epochs
 
-        # TD epochs
+        # # TD epochs
 
-        raw = raw.filter(
-            None,
-            30,
-            method="fir",
-            phase="minimum",
-            n_jobs=-1
-        )
+        # raw = raw.filter(
+        #     None,
+        #     30,
+        #     method="fir",
+        #     phase="minimum",
+        #     n_jobs=-1
+        # )
 
-        epochs = mne.Epochs(
-            raw,
-            events=events,
-            baseline=None,
-            preload=True,
-            event_id=[30, 40],
-            tmin=-0.5,
-            tmax=np.max(tr_durations/250 + 1.1 + 2.5),
-            detrend=1
-        )
+        # epochs = mne.Epochs(
+        #     raw,
+        #     events=events,
+        #     baseline=None,
+        #     preload=True,
+        #     event_id=[30, 40],
+        #     tmin=-0.5,
+        #     tmax=np.max(tr_durations/250 + 1.1 + 2.5),
+        #     detrend=1
+        # )
 
-        epochs_array = []
-        for ix, epo in enumerate(list(epochs.iter_evoked())):
-            data = epo.data
-            del_ints = np.arange(500, 500 + tr_cutouts[ix])
-            data = np.delete(data, del_ints, axis=1)
-            data = data[:,:775]
-            epochs_array.append(data)
+        # epochs_array = []
+        # for ix, epo in enumerate(list(epochs.iter_evoked())):
+        #     data = epo.data
+        #     del_ints = np.arange(500, 500 + tr_cutouts[ix])
+        #     data = np.delete(data, del_ints, axis=1)
+        #     data = data[:,:775]
+        #     epochs_array.append(data)
         
-        epochs_array = np.array(epochs_array)
+        # epochs_array = np.array(epochs_array)
 
-        epochs = mne.EpochsArray(
-            epochs_array,
-            epochs.info,
-            events=events[tr_start[:epochs_array.shape[0]]],
-            tmin=-0.5,
-            baseline=None
-        )
+        # epochs = mne.EpochsArray(
+        #     epochs_array,
+        #     epochs.info,
+        #     events=events[tr_start[:epochs_array.shape[0]]],
+        #     tmin=-0.5,
+        #     baseline=None
+        # )
 
-        epochs.save(epochs_TD)
+        # epochs.save(epochs_TD)
 
-        del epochs
+        # del epochs
 
         named_tuple = time.localtime() # get struct_time
         time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
@@ -497,87 +505,84 @@ if parameters["step_6"]:
 
 if parameters["step_7"]:
 
-    if parameters["cov_mx_pre"] == "epochs-TD":
+    epochs_files = files.get_files(
+        subject_meg,
+        parameters["cov_mx_pre"],
+        "-epo.fif",
+        wp=True
+    )[2]
+    epochs_files.sort()
+    for ix, epo_path in enumerate(epochs_files):
+        epochs = mne.read_epochs(
+            epo_path,
+            preload=True
+        )
+        epochs = epochs.apply_baseline((-0.1, 0.0))
+        epochs = epochs.apply_baseline((1.6, 2.6))
 
-        epochs_files = files.get_files(
+        cov_mx = mne.compute_covariance(
+            epochs,
+            method="auto",
+            cv=5,
+            scalings=dict(mag=1e13, grad=1e15, eeg=1e6), # because the data is from gradiometers see the https://mne-tools.github.io/0.17/generated/mne.compute_covariance.html#mne.compute_covariance
+            n_jobs=-1,
+            rank=None
+        )
+        cov_mx_path = op.join(
             subject_meg,
-            parameters["cov_mx_pre"],
-            "-epo.fif",
-            wp=True
-        )[2]
-        epochs_files.sort()
-        for ix, epo_path in enumerate(epochs_files):
-            epochs = mne.read_epochs(
-                epo_path,
-                preload=True
-            )
-            epochs = epochs.apply_baseline((-0.1, 0.0))
-            epochs = epochs.apply_baseline((1.6, 2.6))
+            "{0}-{1}-cov.fif".format(parameters["cov_mx_pre"], str(ix).zfill(3))
+        )
+        cov_mx.save(cov_mx_path)
 
-            cov_mx = mne.compute_covariance(
-                epochs,
-                method="auto",
-                cv=5,
-                scalings=dict(mag=1e13, grad=1e15, eeg=1e6), # because the data is from gradiometers see the https://mne-tools.github.io/0.17/generated/mne.compute_covariance.html#mne.compute_covariance
-                n_jobs=-1,
-                rank=None
-            )
-            cov_mx_path = op.join(
-                subject_meg,
-                "{0}-{1}-cov.fif".format(parameters["cov_mx_pre"], str(ix).zfill(3))
-            )
-            cov_mx.save(cov_mx_path)
-
-            named_tuple = time.localtime() # get struct_time
-            time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
-            print("step 7 done:", time_string)
+        named_tuple = time.localtime() # get struct_time
+        time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+        print("step 7 done:", time_string)
 
 if parameters["step_8"]:
-    if parameters["cov_mx_pre"] == "epochs-TD":
-        epochs_files = files.get_files(
+    epochs_files = files.get_files(
+        subject_meg,
+        parameters["cov_mx_pre"],
+        "-epo.fif",
+        wp=True
+    )[2]
+    epochs_files.sort()
+
+    fwd_solution = files.get_files(subject_meg, "", "-fwd.fif")[2]
+    fwd_solution.sort()
+    noise_cov = files.get_files(
+        subject_meg, 
+        parameters["cov_mx_pre"], 
+        "-cov.fif"
+    )[2]
+    noise_cov.sort()
+
+    all_files = list(zip(noise_cov, fwd_solution, epochs_files))
+
+    for cov_path, fwd_path, epo_path in all_files:
+        epochs = mne.read_epochs(epo_path)
+        cov = mne.read_cov(cov_path)
+        fwd = mne.read_forward_solution(fwd_path)
+        info = epochs.info
+        inverse_operator = mne.minimum_norm.make_inverse_operator(
+            info,
+            fwd,
+            cov,
+            loose=0.2,
+            depth=0.8
+        )
+
+        inv_path = op.join(
             subject_meg,
-            parameters["cov_mx_pre"],
-            "-epo.fif",
-            wp=True
-        )[2]
-        epochs_files.sort()
-
-        fwd_solution = files.get_files(subject_meg, "", "-fwd.fif")[2]
-        fwd_solution.sort()
-        noise_cov = files.get_files(
-            subject_meg, 
-            parameters["cov_mx_pre"], 
-            "-cov.fif"
-        )[2]
-        noise_cov.sort()
-
-        all_files = list(zip(noise_cov, fwd_solution, epochs_files))
-
-        for cov_path, fwd_path, epo_path in all_files:
-            epochs = mne.read_epochs(epo_path)
-            cov = mne.read_cov(cov_path)
-            fwd = mne.read_forward_solution(fwd_path)
-            info = epochs.info
-            inverse_operator = mne.minimum_norm.make_inverse_operator(
-                info,
-                fwd,
-                cov,
-                loose=0.2,
-                depth=0.8
+            "{0}-{1}-inv.fif".format(
+                parameters["cov_mx_pre"], 
+                cov_path.split("/")[-1].split("-")[-2]
             )
+        )
+        mne.minimum_norm.write_inverse_operator(
+            inv_path,
+            inverse_operator
+        )
 
-            inv_path = op.join(
-                subject_meg,
-                "{0}-{1}-inv.fif".format(
-                    parameters["cov_mx_pre"], 
-                    cov_path.split("/")[-1].split("-")[-2]
-                )
-            )
-            mne.minimum_norm.write_inverse_operator(
-                inv_path,
-                inverse_operator
-            )
-
-            named_tuple = time.localtime() # get struct_time
-            time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
-            print("step 8 done:", time_string)
+        named_tuple = time.localtime() # get struct_time
+        time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+        print("step 8 done:", time_string)
