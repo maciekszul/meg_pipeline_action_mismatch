@@ -195,18 +195,19 @@ if parameters["step_2"]:
         events = mne.read_events(event_path)
         raw = mne.io.read_raw_fif(raw_path, preload=True)
 
-        # find indices (ints) of the rows that will be deleted from raw timecourse
-        start = np.where((events[:,2] < 50))[0]
-        end = np.where((events[:,2] > 50) & (events[:,2] < 80))[0]
-        del_ranges = list(zip(events[start][:,0], events[end][:,0]))
-        ints = np.concatenate([np.arange(i[0], i[1]) for i in del_ranges])
+        onsets = mne.pick_events(events, include=[30, 40, 50])
+        ends = mne.pick_events(events, include=[60, 70, 80])
+        annot_onset = (onsets[:,0] - raw.first_samp) / raw.info["sfreq"]
+        duration = (ends[:,0] - onsets[:,0]) / raw.info["sfreq"] - 0.1
+        description = np.array(["bad_joystick_movement"] * duration.shape[0])
 
-        # operations on raw array
-        data = raw.get_data()
-        data = np.delete(data, ints, axis=1)
+        annotations = mne.Annotations(
+            annot_onset,
+            duration,
+            description
+        )
 
-        # recreating the raw object
-        raw = mne.io.RawArray(data, raw.info)
+        raw.set_annotations(annotations)
 
         # ICA
         n_components = 50
@@ -221,6 +222,7 @@ if parameters["step_2"]:
 
         ica.fit(
             raw,
+            reject_by_annotation=True
         )
 
         ica.save(
@@ -284,48 +286,39 @@ if parameters["step_3"]:
             exclude=components_rej[raw_file]
         )
 
-        # calculating the mid-phase cutout
+        # the mid-phase cutout
 
-        tr_start = np.where((events[:,2] < 50))[0]
-        tr_end = np.where((events[:,2] > 50) & (events[:,2] < 80))[0]
+        onsets = mne.pick_events(events, include=[30, 40])
+        ends = mne.pick_events(events, include=[60, 70])
+        duration = ends[:,0] - onsets[:,0]
 
-        tr_onsets, tr_ends = events[tr_start][:,0], events[tr_end][:,0]
-
-        tr_durations = tr_ends - tr_onsets
-        
-        tr_cutouts = np.int_(tr_durations - 1.5*250)
-
-        sel_evts = events[(events[:,2] == 30) | (events[:,2] == 40)]
-        # TF epochs
-        epochs_array = []
-        for ix, i in enumerate(tr_durations):
-            epochs = mne.Epochs(
+        all_epochs = []
+        for ix, event in enumerate(onsets):
+            epoch = mne.Epochs(
                 raw,
-                events=sel_evts[ix:ix+1],
+                events=[event],
                 baseline=None,
                 preload=True,
                 tmin=-0.5,
-                tmax=i/250 + 1.11,
+                tmax=duration[ix] / raw.info["sfreq"] + 1.1,
                 detrend=1
             )
-
-            info_save = epochs.info
-
-            data = epochs.get_data()[0]
-            del_ints = np.arange(500, 500 + tr_cutouts[ix])
+            data = epoch.get_data()[0]
+            del_ints = np.arange(500, duration[ix] + 100)
             data = np.delete(data, del_ints, axis=1)
             data = data[:,:776]
+            info =epoch.info
+            epoch = mne.EpochsArray(
+                np.array([data]),
+                info,
+                events=np.array([event]),
+                tmin=-0.5,
+                baseline=None
+            )
+            all_epochs.append(epoch)
 
-            epochs_array.append(data)
-
-        epochs = mne.EpochsArray(
-            np.array(epochs_array),
-            epochs.info,
-            events=events[tr_start],
-            tmin=-0.5,
-            baseline=None
-        )
-        print(epochs)
+        epochs = mne.concatenate_epochs(all_epochs, add_offset=False)
+        print(np.average(onsets == epochs.events))
         epochs.save(epochs_TF)
 
         del epochs
