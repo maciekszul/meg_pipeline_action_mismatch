@@ -489,7 +489,7 @@ if parameters["step_6"]:
         spacing=None
     )
 
-    morph.save(morph_path)
+    morph.save(morph_path, overwrite=True)
 
     named_tuple = time.localtime() # get struct_time
     time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)

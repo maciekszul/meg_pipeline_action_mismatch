@@ -5,9 +5,9 @@
 
     "step_1": false,
     "step_2": false,
-    "step_3": true,
-    "step_4": true,
-    "step_5": true,
+    "step_3": false,
+    "step_4": false,
+    "step_5": false,
     "step_6": true,
     "step_7": true,
     "step_8": true,

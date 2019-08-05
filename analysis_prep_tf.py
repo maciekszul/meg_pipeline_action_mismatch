@@ -81,7 +81,7 @@ for key_freq in freq_dict.keys():
             # hilbert envelope 
             data = np.abs(hilbert(data, axis=0))
             # baseline
-            data = data - np.mean(data[:,:125], axis=1)[:, np.newaxis]
+            # data = data - np.mean(data[:,:125], axis=1)[:, np.newaxis]
             data_dict[ix] = data
 
         # extract(enumerator[0])
