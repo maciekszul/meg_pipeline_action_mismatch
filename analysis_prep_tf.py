@@ -37,9 +37,9 @@ label_list = left + right
 label_list.sort()
 
 freq_dict = {
-    "alpha": (7, 14),
-    "beta": (14, 30),
-    "delta": (None, 4),
+    # "alpha": (7, 14),
+    # "beta": (14, 30),
+    # "delta": (None, 4),
     "theta": (4, 7),
     "low_gamma": (30, 80)
 }
@@ -54,10 +54,9 @@ freq_dict = {
 
 for key_freq in freq_dict.keys():
     low_freq, high_freq = freq_dict[key_freq]
-    print(low_freq, high_freq)
-
+    print(key_freq, low_freq, high_freq)
+    print("\n")
     for subject in tqdm(subjects[:-4]):
-        print(subject)
         trials_all = files.get_files(path, subject, ".npy")[2]
         trials_all.sort()
 

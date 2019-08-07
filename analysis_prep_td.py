@@ -1,6 +1,7 @@
 import pandas as pd
 from scipy.signal import hilbert
 from mne.filter import filter_data
+from mne.baseline import rescale
 import numpy as np
 import os.path as op
 from tools import files
@@ -34,15 +35,10 @@ label_list.sort()
 
 # subject = subjects[index]
 for subject in tqdm(subjects[:-4]):
-    beh = pd.read_pickle(beh_path)
-    beh = beh.loc[(beh.ID == int(subject)) & (beh.obs_dir_mod != 0)]
-    beh.sort_values(by=["exp_type", "trial"], inplace=True)
-    beh["delay_dur"] = beh.obs_onset - beh.rot_onset - 1.5
-    beh["movement_dir_sign"] = beh.movement_dir.apply(np.sign).astype(int)
-    beh.reset_index(inplace=True, drop=True)
-
     trials_all = files.get_files(path, subject, ".npy")[2]
     trials_all.sort()
+
+    times = np.linspace(-0.5, 2.6, num=776)
 
     enumerator = list(zip(range(len(trials_all)), trials_all))
 
@@ -60,9 +56,9 @@ for subject in tqdm(subjects[:-4]):
             phase="minimum",
             n_jobs=1
         )
-        # baseline
-        data = data - np.mean(data[:, 100:125], axis=1)[:, np.newaxis]
-        data = data - np.mean(data[:,:-250], axis=1)[:, np.newaxis]
+        # # baseline
+        data = rescale(data, times, (-0.1, 0.0), mode="mean")
+        data = rescale(data, times, (1.6, 2.6), mode="mean")
         data_dict[ix] = data
 
 
@@ -75,10 +71,3 @@ for subject in tqdm(subjects[:-4]):
     )
 
     np.save(meg_file, data_dict)
-
-    beh_file = op.join(
-        path_out,
-        "beh-{}.gz".format(subject)
-    )
-
-    beh.to_pickle(beh_file)

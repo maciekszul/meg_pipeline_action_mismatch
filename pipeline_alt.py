@@ -286,6 +286,23 @@ if parameters["step_3"]:
             exclude=components_rej[raw_file]
         )
 
+        filter_picks = mne.pick_types(
+            raw.info,
+            meg=True,
+            ref_meg=True,
+            stim=False,
+            eog=True
+        )
+
+        raw = raw.filter(
+            0.1,
+            None,
+            method="fir",
+            phase="minimum",
+            n_jobs=-1,
+            picks=filter_picks
+        )
+
         # the mid-phase cutout
 
         onsets = mne.pick_events(events, include=[30, 40])
@@ -319,52 +336,13 @@ if parameters["step_3"]:
 
         epochs = mne.concatenate_epochs(all_epochs, add_offset=False)
         print(np.average(onsets == epochs.events))
-        epochs.save(epochs_TF)
-
-        del epochs
-
-        # # TD epochs
-
-        # raw = raw.filter(
-        #     None,
-        #     30,
-        #     method="fir",
-        #     phase="minimum",
-        #     n_jobs=-1
-        # )
-
-        # epochs = mne.Epochs(
-        #     raw,
-        #     events=events,
-        #     baseline=None,
-        #     preload=True,
-        #     event_id=[30, 40],
-        #     tmin=-0.5,
-        #     tmax=np.max(tr_durations/250 + 1.1 + 2.5),
-        #     detrend=1
-        # )
-
-        # epochs_array = []
-        # for ix, epo in enumerate(list(epochs.iter_evoked())):
-        #     data = epo.data
-        #     del_ints = np.arange(500, 500 + tr_cutouts[ix])
-        #     data = np.delete(data, del_ints, axis=1)
-        #     data = data[:,:775]
-        #     epochs_array.append(data)
-        
-        # epochs_array = np.array(epochs_array)
-
-        # epochs = mne.EpochsArray(
-        #     epochs_array,
-        #     epochs.info,
-        #     events=events[tr_start[:epochs_array.shape[0]]],
-        #     tmin=-0.5,
-        #     baseline=None
-        # )
-
-        # epochs.save(epochs_TD)
+        # epochs.save(epochs_TF)
 
         # del epochs
+
+        epochs.save(epochs_TD)
+
+
 
         named_tuple = time.localtime() # get struct_time
         time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)

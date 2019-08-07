@@ -5,11 +5,11 @@
 
     "step_1": false,
     "step_2": false,
-    "step_3": false,
+    "step_3": true,
     "step_4": false,
     "step_5": false,
-    "step_6": true,
-    "step_7": true,
-    "step_8": true,
+    "step_6": false,
+    "step_7": false,
+    "step_8": false,
     "cov_mx_pre": "epochs-TF"
 }
