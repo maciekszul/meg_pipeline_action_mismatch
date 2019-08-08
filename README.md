@@ -23,6 +23,13 @@ Step 3:
  - epoch for T-F and T domain
  - save both
 
+Step 3.5:
+ - apply the rejection
+ - separately filter the raw ~30Hz (for T domain)
+ - epochs aligned to the onset of the trial
+ - epoch for T-F and T domain
+ - save both
+
 MANUALLY FIT THE HEADSHAPE
 
 Step 4:

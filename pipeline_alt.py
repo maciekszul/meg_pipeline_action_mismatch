@@ -303,6 +303,15 @@ if parameters["step_3"]:
             picks=filter_picks
         )
 
+        raw = raw.filter(
+            None,
+            30,
+            method="fir",
+            phase="minimum",
+            n_jobs=-1,
+            picks=filter_picks
+        )
+
         # the mid-phase cutout
 
         onsets = mne.pick_events(events, include=[30, 40])
@@ -342,12 +351,125 @@ if parameters["step_3"]:
 
         epochs.save(epochs_TD)
 
-
-
         named_tuple = time.localtime() # get struct_time
         time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
         print("step 3 done:", time_string)
 
+if parameters["step_3_5"]:
+    components_file_path = op.join(
+        subject_meg,
+        "rejected-components.json"
+    )
+
+    with open(components_file_path) as data:
+        components_rej = json.load(data)
+    
+    for raw_file in components_rej.keys():
+        # output paths
+        epochs_TF = op.join(
+            subject_meg,
+            "epochs-resp-TF-{}-epo.fif".format(raw_file[3:6])
+        )
+        epochs_TD = op.join(
+            subject_meg,
+            "epochs-resp-TD-{}-epo.fif".format(raw_file[3:6])
+        )
+
+        beh_proc = op.join(
+            data_path,
+            "RESULTS",
+            "BEH_PARTICIPANT"
+        )
+        beh_file = files.get_files(
+            beh_proc,
+            "beh-{}".format(subject),
+            ".gz"
+        )[2][0]
+        exp_type = str(int(raw_file[3:6])+1)
+        beh = pd.read_pickle(beh_file)
+        beh = beh.loc[(beh.exp_type == exp_type)]
+        beh.reset_index(inplace=True, drop=True)
+        
+        # read files
+        raw = mne.io.read_raw_fif(
+            op.join(subject_meg, raw_file),
+            preload=True
+        )
+
+        ica_path = files.get_files(
+            subject_meg,
+            "{}".format(raw_file[:6]),
+            "-ica.fif",
+            wp=True
+        )[2][0]
+
+        events_path = files.get_files(
+            subject_meg,
+            "events-{}".format(raw_file[3:6]),
+            "-eve.fif",
+            wp=True
+        )[2][0]
+        
+        events = mne.read_events(
+            events_path
+        )
+
+        ica = mne.preprocessing.read_ica(ica_path)
+
+        raw = ica.apply(
+            raw,
+            exclude=components_rej[raw_file]
+        )
+
+        filter_picks = mne.pick_types(
+            raw.info,
+            meg=True,
+            ref_meg=True,
+            stim=False,
+            eog=True
+        )
+
+        # raw = raw.filter(
+        #     0.1,
+        #     None,
+        #     method="fir",
+        #     phase="minimum",
+        #     n_jobs=-1,
+        #     picks=filter_picks
+        # )
+
+        # raw = raw.filter(
+        #     None,
+        #     30,
+        #     method="fir",
+        #     phase="minimum",
+        #     n_jobs=-1,
+        #     picks=filter_picks
+        # )
+
+        onsets = mne.pick_events(events, include=[30, 40])
+
+        all_epochs = []
+        for ix, event in enumerate(onsets):
+            event[0] += beh.action_onset[ix]
+            epoch = mne.Epochs(
+                raw,
+                events=[event],
+                baseline=None,
+                preload=True,
+                tmin=-0.5,
+                tmax=1,
+                detrend=1
+            )
+            all_epochs.append(epoch)
+
+        epochs = mne.concatenate_epochs(all_epochs, add_offset=False)
+        print(np.average(onsets == epochs.events))
+        epochs.save(epochs_TF)
+        del epochs
+        named_tuple = time.localtime() # get struct_time
+        time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+        print("step 3.5 done:", time_string)
 
 if parameters["step_4"]:
     # setup a source space

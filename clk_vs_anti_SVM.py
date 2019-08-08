@@ -36,6 +36,9 @@ subjects = files.get_folders_files(
 )[0]
 subjects.sort()
 
+remove_subj = [7, 32, 34, 35, 38, 40, 41, 43]
+remove_subj = [str(i).zfill(4) for i in remove_subj]
+[subjects.remove(i) for i in remove_subj]
 subject = subjects[range_index]
 
 beh_file = files.get_files(
@@ -66,62 +69,45 @@ data = np.vstack([i.pick_types(ref_meg=False).get_data() for i in data])
 size, scale = 21, 2
 window = gaussian(size, scale)
 window = window / np.sum(window)
-# np.convolve(data, window, mode='full')
 
 def conv(x):
     return np.convolve(x, window, mode="full")
 
-data = np.apply_along_axis(conv, axis=1, arr=data)
+# data = np.apply_along_axis(conv, axis=1, arr=data)
 
-all_labels = np.array(beh.obs_dir_mod)
+labels = np.array(beh.movement_dir_sign)
 
-odd_ix = np.where(all_labels == -1)[0]
-reg_ix = np.where(all_labels == 1)[0]
+# data + labels
 
-samples = []
-for i in range(20):
-    samples.append(np.random.choice(reg_ix, odd_ix.shape[0]))
+# parameters for the classification
+k_folds = 10 # cv folds
+var_exp = 0.99  # percentage of variance
 
-sample_ix = np.hstack([odd_ix, samples[0]])
+# generate iterator for cross validation
+kf = StratifiedKFold(n_splits=k_folds, shuffle=True)
+cv_iter = kf.split(np.zeros(data.shape), labels)
 
-scores_all = []
-for sample_reg in tqdm(samples):
-    # data + labels
-    sample_ix = np.hstack([odd_ix, sample_reg])
-    labels = all_labels[sample_ix]
-    X = data[sample_ix]
+# pipeline for classification
+cl = make_pipeline(
+    RobustScaler(), 
+    PCA(n_components=var_exp), 
+    LinearSVC(max_iter=10000, dual=False, penalty="l1")
+)
 
-    # parameters for the classification
-    k_folds = 10 # cv folds
-    var_exp = 0.99  # percentage of variance
+# temporal generalisation
+temp_genr = GeneralizingEstimator(
+    cl, 
+    n_jobs=1, 
+    scoring="roc_auc"
+)
 
-    # generate iterator for cross validation
-    kf = StratifiedKFold(n_splits=k_folds, shuffle=True)
-    cv_iter = kf.split(np.zeros(X.shape), labels)
+# cross validation
+scores = cross_val_multiscore(temp_genr, data, labels, cv=cv_iter, n_jobs=-1)
 
-    # pipeline for classification
-    cl = make_pipeline(
-        RobustScaler(), 
-        PCA(n_components=var_exp), 
-        LinearSVC(max_iter=10000, dual=False, penalty="l1")
-    )
-
-    # temporal generalisation
-    temp_genr = GeneralizingEstimator(
-        cl, 
-        n_jobs=1, 
-        scoring="roc_auc"
-    )
-
-    # cross validation
-    scores = cross_val_multiscore(temp_genr, X, labels, cv=cv_iter, n_jobs=-1)
-    scores_all.append(scores)
-
-scores_all = np.vstack(scores_all)
 
 scores_path = op.join(
     output_dir,
-    "reg_vs_odd_svm-{}.npy".format(subject)
+    "clk_vs_anti_svm_no_smoothing-{}.npy".format(subject)
 )
 
-np.save(scores_path, scores_all)
+np.save(scores_path, scores)
