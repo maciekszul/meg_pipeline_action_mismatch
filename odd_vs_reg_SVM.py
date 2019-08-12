@@ -1,13 +1,12 @@
 import sys
 import mne
+from mne.baseline import rescale
 from tools import files
 import numpy as np
 import pandas as pd
 import os.path as op
-import matplotlib.pylab as plt
 from scipy.signal import gaussian
 from tqdm import tqdm
-import seaborn as sns
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
@@ -37,6 +36,8 @@ subjects = files.get_folders_files(
 subjects.sort()
 
 subject = subjects[range_index]
+
+print(subject)
 
 beh_file = files.get_files(
     beh_path,
@@ -71,7 +72,10 @@ window = window / np.sum(window)
 def conv(x):
     return np.convolve(x, window, mode="full")
 
-data = np.apply_along_axis(conv, axis=1, arr=data)
+# data = np.apply_along_axis(conv, axis=1, arr=data)
+times = np.linspace(-0.5, 2.6, num=776)
+
+data = rescale(data, times, (-0.1, 0.0), mode="mean")
 
 all_labels = np.array(beh.obs_dir_mod)
 
@@ -125,3 +129,5 @@ scores_path = op.join(
 )
 
 np.save(scores_path, scores_all)
+
+print("saved")

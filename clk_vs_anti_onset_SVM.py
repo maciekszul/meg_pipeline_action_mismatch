@@ -11,10 +11,12 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
 from sklearn.decomposition import PCA
 from sklearn.model_selection import StratifiedKFold
-from mne.decoding import (SlidingEstimator, 
-                          GeneralizingEstimator,
-                          cross_val_multiscore, 
-                          get_coef)
+from mne.decoding import (
+    SlidingEstimator, 
+    GeneralizingEstimator,
+    cross_val_multiscore, 
+    get_coef
+)
 
 try:
     range_index = int(sys.argv[1])
@@ -52,35 +54,41 @@ meg_path = op.join(
     subject,
     "new_v1"
 )
-meg_files = files.get_files(
+
+onset_files = files.get_files(
+    meg_path,
+    "epochs-resp-TD",
+    "-epo.fif"
+)[2]
+onset_files.sort()
+
+obs_files = files.get_files(
     meg_path,
     "epochs-TD",
     "-epo.fif"
 )[2]
-meg_files.sort()
+obs_files.sort()
+
+onset_times = np.linspace(-0.5, 1, num=376)
+obs_times = np.linspace(-0.5, 2.6, num=776)
 
 # read data
-
 beh = pd.read_pickle(beh_file)
 
-data = [mne.read_epochs(i) for i in meg_files]
-data = np.vstack([i.pick_types(ref_meg=False).get_data() for i in data])
+onsets = [mne.read_epochs(i) for i in onset_files]
+onsets = np.vstack([i.pick_types(ref_meg=False).get_data() for i in onsets])
 
-size, scale = 21, 2
-window = gaussian(size, scale)
-window = window / np.sum(window)
+onsets = rescale(onsets, onset_times, (-0.5, 0.4), mode="mean")
 
-def conv(x):
-    return np.convolve(x, window, mode="full")
+obs = [mne.read_epochs(i) for i in obs_files]
+obs = np.vstack([i.pick_types(ref_meg=False).get_data() for i in obs])
 
-data = np.apply_along_axis(conv, axis=1, arr=data)
+obs = rescale(obs, obs_times, (1.6, 2.6), mode="mean")
+obs = rescale(obs, obs_times, (1.5, 1.6), mode="mean")
 
-times = np.linspace(-0.5, 2.6, num=776)
-data = rescale(data, times, (-0.1, 0.0), mode="mean")
+data = np.concatenate([onsets, obs[:,:,500:]], axis=-1)
 
 labels = np.array(beh.movement_dir_sign)
-
-# data + labels
 
 # parameters for the classification
 k_folds = 10 # cv folds
@@ -107,10 +115,9 @@ temp_genr = GeneralizingEstimator(
 # cross validation
 scores = cross_val_multiscore(temp_genr, data, labels, cv=cv_iter, n_jobs=-1)
 
-
 scores_path = op.join(
     output_dir,
-    "clk_vs_anti_svm_baseline-{}.npy".format(subject)
+    "clk_vs_anti_onset-{}.npy".format(subject)
 )
 
 np.save(scores_path, scores)

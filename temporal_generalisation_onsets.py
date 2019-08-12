@@ -1,7 +1,7 @@
-import os.path as op
 import matplotlib.pylab as plt
 import matplotlib.contour as ticker
 from tools import files
+import os.path as op
 import numpy as np
 from scipy.stats import trim_mean, sem
 from mne.stats import permutation_cluster_1samp_test
@@ -10,7 +10,7 @@ output_dir = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/SVM"
 
 img_save = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/VIZ_HELP"
 
-dataset = "reg_vs_odd_svm"
+dataset = "F-clk_vs_anti_onset"
 
 all_files = files.get_files(
     output_dir,
@@ -27,7 +27,7 @@ for file in all_files:
     data.append(pp)
 data = np.array(data)
 
-times = np.linspace(-0.5, 2.6, num=776)
+times = np.linspace(-0.5, 2.1, num=652)
 
 minimax = (0.25, 0.5, 0.75)
 
@@ -86,11 +86,11 @@ ax.set_title('Temporal Generalization')
 ax.axvline(0, linewidth=.5, linestyle='--', color='black')
 ax.axhline(0, linewidth=.5, linestyle='--', color='black')
 
-ax.axvline(1.5, linewidth=.5, linestyle='--', color='black')
-ax.axhline(1.5, linewidth=.5, linestyle='--', color='black')
+ax.axvline(1.0, linewidth=.5, linestyle='--', color='black')
+ax.axhline(1.0, linewidth=.5, linestyle='--', color='black')
 
-ax.axvline(1.6, linewidth=.5, linestyle='--', color='black')
-ax.axhline(1.6, linewidth=.5, linestyle='--', color='black')
+ax.axvline(1.1, linewidth=.5, linestyle='--', color='black')
+ax.axhline(1.1, linewidth=.5, linestyle='--', color='black')
 
 colorbar = plt.colorbar(terrain, ax=ax, ticks=minimax, shrink=0.75)
 colorbar.set_label("Classification performance [ROC AUC]")
@@ -102,6 +102,7 @@ filenameTG = op.join(
 
 plt.show()
 plt.savefig(filenameTG, bbox_inches="tight")
+
 
 diag_sem = sem(np.diagonal(data), axis=1)
 diag_mean = np.diagonal(tg_mean)
@@ -120,14 +121,14 @@ ax.fill_between(
 ax.axhline(0.5, linewidth=.5, linestyle='-', color='black')
 
 ax.axvline(0, linewidth=.5, linestyle='--', color='black')
-ax.axvline(1.5, linewidth=.5, linestyle='--', color='black')
-ax.axvline(1.6, linewidth=.5, linestyle='--', color='black')
+ax.axvline(1.0, linewidth=.5, linestyle='--', color='black')
+ax.axvline(1.1, linewidth=.5, linestyle='--', color='black')
 
 ax.set_ylabel("Classification performance [ROC AUC]")
 ax.set_xlabel("Training Time (s)")
 
 plt.ylim([0.45, 0.75])
-plt.xlim([-0.5, 2.6])
+plt.xlim([-0.5, 2.1])
 
 filenameCLAS = op.join(
     img_save,
