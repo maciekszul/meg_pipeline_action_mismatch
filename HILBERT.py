@@ -99,11 +99,19 @@ events = mne.read_events(
 
 freq_bands = {
     "alpha": (9, 14),
-    "beta": (14, 40),
+    "beta": (14, 30),
     "theta": (4, 7),
     "low_gamma": (30, 80),
     "stimulus": (7, 9)
 }
+
+# freq_bands = {
+#     # "alpha": (9, 14),
+#     "beta": (14, 30)
+#     # "theta": (4, 7),
+#     # "low_gamma": (30, 80),
+#     # "stimulus": (7, 9)
+# }
 
 raw = mne.io.read_raw_fif(
     raw_file,
