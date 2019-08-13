@@ -42,8 +42,16 @@ freq_order = ("low_gamma", "beta", "alpha", "stimulus", "theta")
 group_order = ("A", "B", "E", "C", "D", "F", "G")
 # group_order = ("E", "F", "G")
 
-times = np.linspace(-0.5, 1, num=376)  # respo specific
-signal = np.linspace(-4, 10, num=376)
+rot_range = (100, 500)
+obs_range = (500, 776)
+rot_times = np.linspace(-0.1, 1.5, num=np.diff(rot_range)[0])
+obs_times = np.linspace(-0.1, 1.0, num=np.diff(obs_range)[0])
+rot_xlim = (-0.1, 1.5)
+obs_xlim = (-0.1, 1.0)
+
+x_range = obs_range
+times = obs_times
+xlims = obs_xlim
 
 ticks = [0.0, 0.5, 1.0]  # respo specific
 tick_labels = [str(i) for i in ticks]  # respo specific
@@ -104,7 +112,7 @@ for column, group_key in enumerate(group_order):
         # read the data
         data_files = files.get_files(
             output_dir,
-            "resp-{}".format(freq_key), # respo specific
+            "{}".format(freq_key), # respo specific
             ".npy"
         )[2]
         data_files.sort()
@@ -112,13 +120,25 @@ for column, group_key in enumerate(group_order):
         odd, regular = [np.load(i).item() for i in data_files]
         # # data processing
         reg_data = np.array(regular[group_key])
+        reg_data = reg_data[:, x_range[0]:x_range[1]]
         reg_data = rescale(reg_data, times, (-0.5, 0.0), mode="mean")
         reg_mean = np.average(reg_data, axis=0)
         reg_sem = sem(reg_data, axis=0)
         odd_data = np.array(odd[group_key])
+        odd_data = odd_data[:, x_range[0]:x_range[1]]
         odd_data = rescale(odd_data, times, (-0.5, 0.0), mode="mean")
         odd_mean = np.average(odd_data, axis=0)
         odd_sem = sem(odd_data, axis=0)
+
+        threshold=2.0
+
+        T_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(
+            [reg_data, odd_data], 
+            n_permutations=5000, 
+            threshold=threshold, 
+            tail=0, 
+            n_jobs=-1
+        )
 
         # plot results
 
@@ -140,6 +160,24 @@ for column, group_key in enumerate(group_order):
             alpha=0.2, 
             linewidth=0
         )
+
+        # plot stats
+        for i_c, c in enumerate(clusters):
+            c = c[0]
+            if cluster_p_values[i_c] < 0.05:
+                ax.axvspan(
+                    times[c.start], 
+                    times[c.stop-1],
+                    color=sign_colour,
+                    alpha=0.2
+                )
+            else:
+                ax.axvspan(
+                    times[c.start], 
+                    times[c.stop-1],
+                    color=non_sign_colour,
+                    alpha=0.2
+                )
 
         ax.axhline(0, lw=0.5, color="black")
         ax.axvline(0, linestyle="--", linewidth=0.5, color="black")
@@ -166,6 +204,6 @@ for column, group_key in enumerate(group_order):
             # ax.yaxis.set_ticks([0, 5, 10])
             # ax.yaxis.set_ticklabels(["0", "5", "10"])
             ax.set_ylabel("GFP\n[A.U.]")
-        plt.xlim((-0.5, 1))
+        plt.xlim(xlims)
 
 plt.show()

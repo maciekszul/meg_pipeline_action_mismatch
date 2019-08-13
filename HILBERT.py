@@ -137,18 +137,8 @@ for key in freq_bands.keys():
     l_freq, h_freq = freq_bands[key]
     print(key, l_freq, h_freq)
 
-    raw_bp = raw.copy()
-    raw_bp = raw_bp.filter(
+    raw_bp = raw.copy().filter(
         l_freq,
-        None,
-        method="fir",
-        phase="minimum",
-        n_jobs=-1,
-        picks=filter_picks
-    )
-
-    raw_bp = raw_bp.filter(
-        None,
         h_freq,
         method="fir",
         phase="minimum",
@@ -203,12 +193,11 @@ for key in freq_bands.keys():
     )
     epochs.save(epochs_path)
     del epochs
-
     all_epochs = []
     for ix, event in enumerate(onsets):
         event[0] += beh.action_onset[ix]
         epoch = mne.Epochs(
-            raw,
+            raw_bp,
             events=[event],
             baseline=None,
             preload=True,

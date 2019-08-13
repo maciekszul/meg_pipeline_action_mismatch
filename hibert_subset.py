@@ -90,6 +90,7 @@ for sub in subsets:
             stim=False,
             eog=False
         )
+
         epochs.apply_baseline((-0.5, 0.0))
 
         regular = epochs["30"].average()
