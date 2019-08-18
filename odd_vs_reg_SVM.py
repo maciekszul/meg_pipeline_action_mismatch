@@ -64,18 +64,20 @@ beh = pd.read_pickle(beh_file)
 data = [mne.read_epochs(i) for i in meg_files]
 data = np.vstack([i.pick_types(ref_meg=False).get_data() for i in data])
 
-size, scale = 21, 2
-window = gaussian(size, scale)
-window = window / np.sum(window)
+# size, scale = 21, 2
+# window = gaussian(size, scale)
+# window = window / np.sum(window)
 # np.convolve(data, window, mode='full')
 
-def conv(x):
-    return np.convolve(x, window, mode="full")
+# def conv(x):
+#     return np.convolve(x, window, mode="full")
 
 # data = np.apply_along_axis(conv, axis=1, arr=data)
-times = np.linspace(-0.5, 2.6, num=776)
 
-data = rescale(data, times, (-0.1, 0.0), mode="mean")
+times = np.linspace(-0.6, 2.6, num=801)
+data = rescale(data, times, (-0.6, -0.5), mode="mean")
+
+data[:,:,525:] = rescale(data[:,:,525:], times[525:], (1.5, 1.6), mode="mean")
 
 all_labels = np.array(beh.obs_dir_mod)
 

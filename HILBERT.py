@@ -105,14 +105,6 @@ freq_bands = {
     "stimulus": (7, 9)
 }
 
-# freq_bands = {
-#     # "alpha": (9, 14),
-#     "beta": (14, 30)
-#     # "theta": (4, 7),
-#     # "low_gamma": (30, 80),
-#     # "stimulus": (7, 9)
-# }
-
 raw = mne.io.read_raw_fif(
     raw_file,
     preload=True
@@ -158,20 +150,20 @@ for key in freq_bands.keys():
             events=[event],
             baseline=None,
             preload=True,
-            tmin=-0.5,
+            tmin=-0.6,
             tmax=duration[ix] / raw.info["sfreq"] + 1.1,
             detrend=1
         )
         data = epoch.get_data()[0]
-        del_ints = np.arange(500, duration[ix] + 100)
+        del_ints = np.arange(525, duration[ix] + 100)
         data = np.delete(data, del_ints, axis=1)
-        data = data[:,:776]
+        data = data[:,:801]
         info =epoch.info
         epoch = mne.EpochsArray(
             np.array([data]),
             info,
             events=np.array([event]),
-            tmin=-0.5,
+            tmin=-0.6,
             baseline=None
         )
         all_epochs.append(epoch)
@@ -201,7 +193,7 @@ for key in freq_bands.keys():
             events=[event],
             baseline=None,
             preload=True,
-            tmin=-0.5,
+            tmin=-1,
             tmax=1,
             detrend=1
         )

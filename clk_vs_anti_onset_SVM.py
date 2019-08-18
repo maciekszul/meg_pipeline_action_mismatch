@@ -69,8 +69,8 @@ obs_files = files.get_files(
 )[2]
 obs_files.sort()
 
-onset_times = np.linspace(-0.5, 1, num=376)
-obs_times = np.linspace(-0.5, 2.6, num=776)
+onset_times = np.linspace(-1, 1, num=501)
+obs_times = np.linspace(-0.6, 2.6, num=801)
 
 # read data
 beh = pd.read_pickle(beh_file)
@@ -78,15 +78,15 @@ beh = pd.read_pickle(beh_file)
 onsets = [mne.read_epochs(i) for i in onset_files]
 onsets = np.vstack([i.pick_types(ref_meg=False).get_data() for i in onsets])
 
-onsets = rescale(onsets, onset_times, (-0.5, 0.4), mode="mean")
+onsets = rescale(onsets, onset_times, (-0.5, -0.4), mode="mean")
 
 obs = [mne.read_epochs(i) for i in obs_files]
 obs = np.vstack([i.pick_types(ref_meg=False).get_data() for i in obs])
 
-obs = rescale(obs, obs_times, (1.6, 2.6), mode="mean")
+obs = rescale(obs, obs_times, (-0.6, -0.5), mode="mean")
 obs = rescale(obs, obs_times, (1.5, 1.6), mode="mean")
 
-data = np.concatenate([onsets, obs[:,:,500:]], axis=-1)
+data = np.concatenate([onsets, obs[:,:,525:]], axis=-1)
 
 labels = np.array(beh.movement_dir_sign)
 
@@ -117,7 +117,7 @@ scores = cross_val_multiscore(temp_genr, data, labels, cv=cv_iter, n_jobs=-1)
 
 scores_path = op.join(
     output_dir,
-    "clk_vs_anti_onset-{}.npy".format(subject)
+    "clk_vs_anti_onset_new_baseline_short-{}.npy".format(subject)
 )
 
 np.save(scores_path, scores)

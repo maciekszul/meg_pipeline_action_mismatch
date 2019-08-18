@@ -11,6 +11,7 @@ from matplotlib import gridspec
 
 output_dir = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS"
 epo_info_path = "/cubric/scratch/c1557187/act_mis/MEG/0001/new_v1/epochs-TD-001-epo.fif"
+img_save = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/VIZ_HELP"
 
 info = mne.io.read_info(epo_info_path)
 ch_subset = mne.pick_types(info, ref_meg=False, eog=False, stim=False)
@@ -42,11 +43,15 @@ freq_order = ("low_gamma", "beta", "alpha", "stimulus", "theta")
 group_order = ("A", "B", "E", "C", "D", "F", "G")
 # group_order = ("E", "F", "G")
 
-times = np.linspace(-0.5, 1, num=376)  # respo specific
+times = np.linspace(-1, 1, num=501)  # respo specific
 signal = np.linspace(-4, 10, num=376)
 
-ticks = [0.0, 0.5, 1.0]  # respo specific
+ticks = [-0.5, 0.0, 0.5, 1.0]  # respo specific
 tick_labels = [str(i) for i in ticks]  # respo specific
+
+ylims = (-8, 4)
+y_ticks = [-6, -3, 0, 3]
+y_ticklabels = [str(i) for i in y_ticks]
 
 reg_colour = "#00A4CC"
 odd_colour = "#F95700"
@@ -65,7 +70,7 @@ gs = gridspec.GridSpec(
     height_ratios=[0.5] * nrows
 )
 
-figure = plt.figure(figsize=(18, 21))
+figure = plt.figure(figsize=(15, 9))
 for column, group_key in enumerate(group_order):
     for row, freq_key in enumerate(freq_order):
         if row == 0:
@@ -111,12 +116,12 @@ for column, group_key in enumerate(group_order):
 
         odd, regular = [np.load(i).item() for i in data_files]
         # # data processing
-        reg_data = np.array(regular[group_key])
-        reg_data = rescale(reg_data, times, (-0.5, 0.0), mode="mean")
+        reg_data = np.array(regular[group_key]) * 1e14
+        reg_data = rescale(reg_data, times, (-0.1, 0.0), mode="mean")
         reg_mean = np.average(reg_data, axis=0)
         reg_sem = sem(reg_data, axis=0)
-        odd_data = np.array(odd[group_key])
-        odd_data = rescale(odd_data, times, (-0.5, 0.0), mode="mean")
+        odd_data = np.array(odd[group_key]) * 1e14
+        odd_data = rescale(odd_data, times, (-0.1, 0.0), mode="mean")
         odd_mean = np.average(odd_data, axis=0)
         odd_sem = sem(odd_data, axis=0)
 
@@ -156,16 +161,23 @@ for column, group_key in enumerate(group_order):
             ax.set_ylabel(freq_label)
         ax.set_xticks([])
         ax.yaxis.tick_right()
-        # ax.set_yticks([])
+        ax.set_yticks([])
         if row == nrows-1:
             ax.set_xticks(ticks)
             ax.set_xticklabels(tick_labels)
         if column == ncols-1:
             ax.yaxis.set_label_position("right")
-            # ax.yaxis.tick_right()
-            # ax.yaxis.set_ticks([0, 5, 10])
-            # ax.yaxis.set_ticklabels(["0", "5", "10"])
-            ax.set_ylabel("GFP\n[A.U.]")
-        plt.xlim((-0.5, 1))
+            ax.yaxis.tick_right()
+            ax.yaxis.set_ticks(y_ticks)
+            ax.yaxis.set_ticklabels(y_ticklabels)
+            ax.set_ylabel("Hilbert envelope\n[fT]")
+        plt.xlim((-1, 1))
+
+filenameout = op.join(
+    img_save,
+    "hilbert-{}.svg".format("onset")
+)
+
+plt.savefig(filenameout, bbox_inches="tight")
 
 plt.show()

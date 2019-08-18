@@ -1,15 +1,16 @@
 import sys
 import numpy as np
 import mne
+from mne.baseline import rescale
 import os.path as op
 from tools import files
 from tqdm import tqdm
 
-try:
-    index = int(sys.argv[1])
-except:
-    print("incorrect file index")
-    sys.exit()
+# try:
+#     index = int(sys.argv[1])
+# except:
+#     print("incorrect file index")
+#     sys.exit()
 
 path = "/cubric/scratch/c1557187/act_mis/MEG"
 output_dir = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS"
@@ -55,9 +56,18 @@ for read_file in tqdm(epoch_list_path):
     )
 
     epochs = epochs.pick_types(ref_meg=False)
+    data = epochs.get_data()
+    times = np.linspace(-0.6, 2.6, num=801)
+    data = rescale(data, times, (-0.6, -0.5), mode="mean")
 
-    epochs.apply_baseline((-0.1, 0.0))
-    epochs.apply_baseline((1.6, 2.6))
+    data[:,:,525:] = rescale(data[:,:,525:], times[525:], (1.5, 1.6), mode="mean")
+
+    epochs = mne.EpochsArray(
+        data,
+        epochs.info,
+        events=epochs.events,
+        tmin=epochs.tmin
+    )
 
     regular = epochs["30"].average()
     odd = epochs["40"].average()

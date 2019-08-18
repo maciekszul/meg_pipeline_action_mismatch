@@ -10,7 +10,7 @@ output_dir = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/SVM"
 
 img_save = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/VIZ_HELP"
 
-dataset = "reg_vs_odd_svm"
+dataset = "reg_vs_odd_svm-new_baseline"
 
 all_files = files.get_files(
     output_dir,
@@ -27,7 +27,7 @@ for file in all_files:
     data.append(pp)
 data = np.array(data)
 
-times = np.linspace(-0.5, 2.6, num=776)
+times = np.linspace(-0.6, 2.6, num=801)
 
 minimax = (0.25, 0.5, 0.75)
 

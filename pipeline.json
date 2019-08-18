@@ -5,7 +5,7 @@
 
     "step_1": false,
     "step_2": false,
-    "step_3": false,
+    "step_3": true,
     "step_3_5": true,
     "step_4": false,
     "step_5": false,

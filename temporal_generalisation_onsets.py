@@ -10,7 +10,7 @@ output_dir = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/SVM"
 
 img_save = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/VIZ_HELP"
 
-dataset = "F-clk_vs_anti_onset"
+dataset = "clk_vs_anti_onset_new_baseline_short"
 
 all_files = files.get_files(
     output_dir,
@@ -27,7 +27,7 @@ for file in all_files:
     data.append(pp)
 data = np.array(data)
 
-times = np.linspace(-0.5, 2.1, num=652)
+times = np.linspace(-1, 2.1, num=777)
 
 minimax = (0.25, 0.5, 0.75)
 
@@ -128,7 +128,7 @@ ax.set_ylabel("Classification performance [ROC AUC]")
 ax.set_xlabel("Training Time (s)")
 
 plt.ylim([0.45, 0.75])
-plt.xlim([-0.5, 2.1])
+plt.xlim([-1, 2.1])
 
 filenameCLAS = op.join(
     img_save,

@@ -11,6 +11,7 @@ from matplotlib import gridspec
 
 output_dir = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS"
 epo_info_path = "/cubric/scratch/c1557187/act_mis/MEG/0001/new_v1/epochs-TD-001-epo.fif"
+img_save = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/VIZ_HELP"
 
 info = mne.io.read_info(epo_info_path)
 ch_subset = mne.pick_types(info, ref_meg=False, eog=False, stim=False)
@@ -42,18 +43,40 @@ freq_order = ("low_gamma", "beta", "alpha", "stimulus", "theta")
 group_order = ("A", "B", "E", "C", "D", "F", "G")
 # group_order = ("E", "F", "G")
 
-rot_range = (100, 500)
-obs_range = (500, 776)
-rot_times = np.linspace(-0.1, 1.5, num=np.diff(rot_range)[0])
+rot_range = (0, 525)
+obs_range = (525, 801)
+rot_times = np.linspace(-0.6, 1.5, num=np.diff(rot_range)[0])
 obs_times = np.linspace(-0.1, 1.0, num=np.diff(obs_range)[0])
-rot_xlim = (-0.1, 1.5)
+rot_xlim = (-0.6, 1.5)
 obs_xlim = (-0.1, 1.0)
+obs_ylim = (-2, 4)
+rot_ylim = (-8, 4)
+obs_ticks = [0.0, 0.5, 1.0]
+rot_ticks = [-0.5, 0.0, 0.5, 1.0, 1.5]
+obs_baseline = (-0.5, 0.0)
+rot_baseline = (-0.1, 0.0)
+obs_yticks = [-2, 0, 2, 4]
+rot_yticks = [-6, -3, 0, 3]
 
 x_range = obs_range
 times = obs_times
 xlims = obs_xlim
+ylims = obs_ylim
+ticks = obs_ticks
+baseline = obs_baseline
+y_ticks = obs_yticks
+cat_file = "obs"
 
-ticks = [0.0, 0.5, 1.0]  # respo specific
+# x_range = rot_range
+# times = rot_times
+# xlims = rot_xlim
+# ylims = rot_ylim
+# ticks = rot_ticks
+# baseline = rot_baseline
+# y_ticks = rot_yticks
+# cat_file = "rot"
+
+y_ticklabels = [str(i) for i in y_ticks]
 tick_labels = [str(i) for i in ticks]  # respo specific
 
 reg_colour = "#00A4CC"
@@ -73,7 +96,7 @@ gs = gridspec.GridSpec(
     height_ratios=[0.5] * nrows
 )
 
-figure = plt.figure(figsize=(18, 21))
+figure = plt.figure(figsize=(15, 9))
 for column, group_key in enumerate(group_order):
     for row, freq_key in enumerate(freq_order):
         if row == 0:
@@ -103,6 +126,7 @@ for column, group_key in enumerate(group_order):
                 axes=ax,
                 show=False
             )
+
         row += 1
         ax = figure.add_subplot(
             gs[row, column],
@@ -119,14 +143,14 @@ for column, group_key in enumerate(group_order):
 
         odd, regular = [np.load(i).item() for i in data_files]
         # # data processing
-        reg_data = np.array(regular[group_key])
+        reg_data = np.array(regular[group_key]) * 1e14
         reg_data = reg_data[:, x_range[0]:x_range[1]]
-        reg_data = rescale(reg_data, times, (-0.5, 0.0), mode="mean")
+        reg_data = rescale(reg_data, times, baseline, mode="mean")
         reg_mean = np.average(reg_data, axis=0)
         reg_sem = sem(reg_data, axis=0)
-        odd_data = np.array(odd[group_key])
+        odd_data = np.array(odd[group_key]) * 1e14
         odd_data = odd_data[:, x_range[0]:x_range[1]]
-        odd_data = rescale(odd_data, times, (-0.5, 0.0), mode="mean")
+        odd_data = rescale(odd_data, times, baseline, mode="mean")
         odd_mean = np.average(odd_data, axis=0)
         odd_sem = sem(odd_data, axis=0)
 
@@ -194,16 +218,24 @@ for column, group_key in enumerate(group_order):
             ax.set_ylabel(freq_label)
         ax.set_xticks([])
         ax.yaxis.tick_right()
-        # ax.set_yticks([])
+        ax.set_yticks([])
         if row == nrows-1:
             ax.set_xticks(ticks)
             ax.set_xticklabels(tick_labels)
         if column == ncols-1:
             ax.yaxis.set_label_position("right")
-            # ax.yaxis.tick_right()
-            # ax.yaxis.set_ticks([0, 5, 10])
-            # ax.yaxis.set_ticklabels(["0", "5", "10"])
-            ax.set_ylabel("GFP\n[A.U.]")
+            ax.yaxis.tick_right()
+            ax.yaxis.set_ticks(y_ticks)
+            ax.yaxis.set_ticklabels(y_ticklabels)
+            ax.set_ylabel("Hilbert envelope\n[fT]")
         plt.xlim(xlims)
+        plt.ylim(ylims)
+
+filenameout = op.join(
+    img_save,
+    "hilbert-{}.svg".format(cat_file)
+)
+
+plt.savefig(filenameout, bbox_inches="tight")
 
 plt.show()

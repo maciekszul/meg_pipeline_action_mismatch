@@ -325,32 +325,30 @@ if parameters["step_3"]:
                 events=[event],
                 baseline=None,
                 preload=True,
-                tmin=-0.5,
+                tmin=-0.6,
                 tmax=duration[ix] / raw.info["sfreq"] + 1.1,
                 detrend=1
             )
             data = epoch.get_data()[0]
-            del_ints = np.arange(500, duration[ix] + 100)
+            del_ints = np.arange(525, duration[ix] + 100)
             data = np.delete(data, del_ints, axis=1)
-            data = data[:,:776]
+            data = data[:,:801]
             info =epoch.info
             epoch = mne.EpochsArray(
                 np.array([data]),
                 info,
                 events=np.array([event]),
-                tmin=-0.5,
+                tmin=-0.6,
                 baseline=None
             )
             all_epochs.append(epoch)
 
         epochs = mne.concatenate_epochs(all_epochs, add_offset=False)
         print(np.average(onsets == epochs.events))
+
         # epochs.save(epochs_TF)
-
-        # del epochs
-
         epochs.save(epochs_TD)
-
+        del epochs
         named_tuple = time.localtime() # get struct_time
         time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
         print("step 3 done:", time_string)
@@ -429,23 +427,23 @@ if parameters["step_3_5"]:
             eog=True
         )
 
-        # raw = raw.filter(
-        #     0.1,
-        #     None,
-        #     method="fir",
-        #     phase="minimum",
-        #     n_jobs=-1,
-        #     picks=filter_picks
-        # )
+        raw = raw.filter(
+            0.1,
+            None,
+            method="fir",
+            phase="minimum",
+            n_jobs=-1,
+            picks=filter_picks
+        )
 
-        # raw = raw.filter(
-        #     None,
-        #     30,
-        #     method="fir",
-        #     phase="minimum",
-        #     n_jobs=-1,
-        #     picks=filter_picks
-        # )
+        raw = raw.filter(
+            None,
+            30,
+            method="fir",
+            phase="minimum",
+            n_jobs=-1,
+            picks=filter_picks
+        )
 
         onsets = mne.pick_events(events, include=[30, 40])
 
@@ -457,7 +455,7 @@ if parameters["step_3_5"]:
                 events=[event],
                 baseline=None,
                 preload=True,
-                tmin=-0.5,
+                tmin=-1.0,
                 tmax=1,
                 detrend=1
             )
@@ -465,7 +463,8 @@ if parameters["step_3_5"]:
 
         epochs = mne.concatenate_epochs(all_epochs, add_offset=False)
         print(np.average(onsets == epochs.events))
-        epochs.save(epochs_TF)
+        # epochs.save(epochs_TF)
+        epochs.save(epochs_TD)
         del epochs
         named_tuple = time.localtime() # get struct_time
         time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)

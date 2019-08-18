@@ -70,13 +70,15 @@ size, scale = 21, 2
 window = gaussian(size, scale)
 window = window / np.sum(window)
 
-def conv(x):
-    return np.convolve(x, window, mode="full")
+# def conv(x):
+#     return np.convolve(x, window, mode="full")
 
-data = np.apply_along_axis(conv, axis=1, arr=data)
+# data = np.apply_along_axis(conv, axis=1, arr=data)
 
-times = np.linspace(-0.5, 2.6, num=776)
-data = rescale(data, times, (-0.1, 0.0), mode="mean")
+times = np.linspace(-0.6, 2.6, num=801)
+data = rescale(data, times, (-0.6, -0.5), mode="mean")
+
+data[:,:,525:] = rescale(data[:,:,525:], times[525:], (1.5, 1.6), mode="mean")
 
 labels = np.array(beh.movement_dir_sign)
 
@@ -110,9 +112,9 @@ scores = cross_val_multiscore(temp_genr, data, labels, cv=cv_iter, n_jobs=-1)
 
 scores_path = op.join(
     output_dir,
-    "clk_vs_anti_svm_baseline-{}.npy".format(subject)
+    "clk_vs_anti_new_baseline-{}.npy".format(subject)
 )
 
 np.save(scores_path, scores)
 
-print("saved")
+print("saved", scores_path)

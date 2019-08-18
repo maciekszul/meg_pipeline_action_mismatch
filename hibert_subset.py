@@ -5,11 +5,11 @@ import os.path as op
 from tools import files
 from tqdm import tqdm
 
-try:
-    index = int(sys.argv[1])
-except:
-    print("incorrect file index")
-    sys.exit()
+# try:
+#     index = int(sys.argv[1])
+# except:
+#     print("incorrect file index")
+#     sys.exit()
 
 path = "/cubric/scratch/c1557187/act_mis/MEG"
 output_dir = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS"
@@ -99,8 +99,8 @@ for sub in subsets:
 
         for key in sensor_groupings.keys():
             grp = sensor_groupings[key]
-            r = np.sum(regular.copy().pick_channels(grp).data ** 2, axis=0)
-            o = np.sum(odd.copy().pick_channels(grp).data ** 2, axis=0)
+            r = np.mean(regular.copy().pick_channels(grp).data, axis=0)
+            o = np.mean(odd.copy().pick_channels(grp).data, axis=0)
             regular_data[key].append(r)
             odd_data[key].append(o)
     regular_path = op.join(
