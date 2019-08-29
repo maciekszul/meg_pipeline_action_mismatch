@@ -10,7 +10,7 @@ output_dir = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/SVM"
 
 img_save = "/cubric/scratch/c1557187/act_mis/RESULTS/THESIS_ANALYSIS/VIZ_HELP"
 
-dataset = "reg_vs_odd_svm-new_baseline"
+dataset = "clk_vs_anti_new_baseline_low_gamma"
 
 all_files = files.get_files(
     output_dir,
@@ -19,6 +19,11 @@ all_files = files.get_files(
 )[2]
 
 all_files.sort()
+
+# remove_subj = [7, 32, 34, 35, 38, 40, 41, 43]
+# remove_subj = [str(i).zfill(4) for i in remove_subj]
+
+# all_files = [i for i in all_files if i[-8:-4] not in remove_subj]
 
 data = []
 for file in all_files:
@@ -37,7 +42,7 @@ print("start")
 
 # perm t test
 t_obs, clusters, cluster_p, H0 = permutation_cluster_1samp_test(
-    data - 0.5,
+    data - 0.50,
     connectivity=None,
     step_down_p=0,
     tail=0, 
@@ -70,7 +75,6 @@ terrain = ax.imshow(
 contours = ax.contour(
     bool_map,
     1,
-    label = "p<0.05",
     linewidths=0.2,
     colors="black",
     linestyles="solid",
@@ -93,7 +97,7 @@ ax.axvline(1.6, linewidth=.5, linestyle='--', color='black')
 ax.axhline(1.6, linewidth=.5, linestyle='--', color='black')
 
 colorbar = plt.colorbar(terrain, ax=ax, ticks=minimax, shrink=0.75)
-colorbar.set_label("Classification performance [ROC AUC]")
+colorbar.set_label("Classification performance [Accuracy]")
 
 filenameTG = op.join(
     img_save,
@@ -123,7 +127,7 @@ ax.axvline(0, linewidth=.5, linestyle='--', color='black')
 ax.axvline(1.5, linewidth=.5, linestyle='--', color='black')
 ax.axvline(1.6, linewidth=.5, linestyle='--', color='black')
 
-ax.set_ylabel("Classification performance [ROC AUC]")
+ax.set_ylabel("Classification performance [Accuracy]")
 ax.set_xlabel("Training Time (s)")
 
 plt.ylim([0.45, 0.75])
